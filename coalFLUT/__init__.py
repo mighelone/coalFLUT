@@ -36,7 +36,7 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     ulf_result: pyFLUT.ulf.UlfData
         result object of the ULF simulation
     """
-    ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:1.1f}".format(fuel[
+    ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel[
                                                                                              'T'],Y,
                                                                                         chist)
     ulf_result = ulf_basename + ".ulf"
