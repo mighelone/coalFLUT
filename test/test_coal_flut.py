@@ -80,3 +80,8 @@ def test_read_dictionary():
 def test_normalize():
     X = {'CO':1, 'CO2':0.5}
     assert sum(coalFLUT.normalize(X).values()) == 1
+
+def test_mix_fuels():
+    res = init_class()
+    assert res.mix_fuels(1)['CH4'] == res.volatiles['Y']['CH4']
+    assert res.mix_fuels(0)['CO'] == res.chargas['Y']['CO']

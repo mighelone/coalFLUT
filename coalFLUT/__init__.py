@@ -142,7 +142,7 @@ class coalFLUT(ulf.UlfDataSeries):
         self.Tf = read_dict_list(**inp['coal']['T'])
         self.ulf_settings = inp['ulf']
 
-        self.chargas = self._define_chargas()
+        self.chargas = {'Y': self._define_chargas()}
 
 
     def mix_fuels(self, Y):
@@ -159,7 +159,8 @@ class coalFLUT(ulf.UlfDataSeries):
         mix_fuel: {'T': T, 'Y': {sp0:y0, sp1:y1, ...}}
             mixed fuel dictionary
         """
-        pass
+        return {sp: (Y*self.volatiles['Y'].get(sp, 0) + (1-Y) * self.chargas['Y'].get(sp, 0))
+                for sp in list(set(self.chargas['Y'].keys() + self.volatiles['Y'].keys()))}
 
     def _define_chargas(self):
         chargas = {}
