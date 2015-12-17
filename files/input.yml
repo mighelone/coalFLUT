@@ -1,0 +1,49 @@
+# volatile composition
+# now the direct composition is given
+# in future we can also assign the C, H, O, N ultimate analysis
+# temperature can be given as list, arange or linspace, logspace followed by a list of values
+# arange or linspace, logspace are numpy functions
+coal:
+  devolatilization:
+    Y:
+      CH4: 0.282
+      C2H2: 0.420
+      CO2: 0.269
+      N2: 0.028
+  T:
+    method: arange
+    values:
+      - 600
+      - 2000
+      - 100
+
+oxidizer:
+  X:
+    N2: 0.79
+    O2: 0.21
+  T: 298
+
+mechanism:
+  files/mechanism/drm22.xml
+  #files/mechanism/gri30.xml
+
+# two mixture fractions are defined Z1 and Z2, which are respectively the devolatilization and
+# the char burnout gases
+# Z = Z1 + Z2 defined in [0:1]
+# Y = Z1 / (Z1 + Z2) defined in [0:1]
+mixture_fraction:
+  Z:
+    points: 101
+  Y:
+    method: linspace
+    values:
+      - 0
+      - 1
+      - 21
+
+# ulf settings
+# additional settings can be modified directly from the reference ulf file:
+# "basename".ulf
+ulf:
+  solver: /opt/ulf/ulf
+  basename: flamelet

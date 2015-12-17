@@ -1,0 +1,61 @@
+"""
+Test coalFLUT class
+"""
+
+import pytest
+import coalFLUT
+import yaml
+import numpy as np
+import os
+import pyFLUT.ulf as ulf
+
+yaml_file = "files/input.yml"
+
+def init_class():
+    return coalFLUT.coalFLUT(input_yaml=yaml_file)
+
+def read_yaml():
+    with open(yaml_file, "r") as f: inp = yaml.load(f)
+    return inp
+
+def test_init():
+    #res = init_class()
+    inp = read_yaml()
+    # set Y to list
+    yaml_test = 'test.yml'
+    # set Y as list
+    inp['mixture_fraction']['Y']['method'] = 'list'
+    inp['mixture_fraction']['Y']['values'] = np.linspace(0, 1, 21).tolist()
+    with open(yaml_test, "w") as f: yaml.dump(inp, f)
+    res = coalFLUT.coalFLUT(input_yaml=yaml_test)
+    assert (inp['mixture_fraction']['Y']['values'] == res.Y).all()
+    # set Y as linspace
+    inp['mixture_fraction']['Y']['method'] = 'linspace'
+    inp['mixture_fraction']['Y']['values'] = [0, 1, 21]
+    with open(yaml_test, "w") as f: yaml.dump(inp, f)
+    res = coalFLUT.coalFLUT(input_yaml=yaml_test)
+    assert (np.linspace(*inp['mixture_fraction']['Y']['values']) == res.Y).all()
+    os.remove(yaml_test)
+
+def test_run():
+    inp = read_yaml()
+    fuel = {
+        'T': 600,
+        'Y': {
+            'CH4': 0.5,
+            'CH2': 0.5,
+            'CO': 0,
+            'CO2': 0
+        }
+    }
+    ox = {
+        'T': 400,
+        'Y': {
+            'O2': 0.23,
+            'N2': 0.77
+        }
+    }
+
+    runner = ulf.UlfRun(inp['ulf']['basename']+".ulf", inp['ulf']['solver'])
+    runner.set('MECHANISM', inp['mechanism'])
+    assert isinstance(coalFLUT.runUlf(inp['ulf'], 0.2, 10, fuel, ox), ulf.UlfData)

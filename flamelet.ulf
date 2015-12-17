@@ -1,0 +1,46 @@
+// time settings
+#define STARTTIME 0.0;
+#define ENDTIME 1.0;
+#define WRITEINTERVAL 1.0;
+#define TIMEPRECISION 2;
+// boundary conditions
+#define SPECIES0 CH4;
+#define SPECIES1 O2;
+#define SPECIES2 C2H2;
+#define SPECIES3 CO2;
+#define SPECIES4 CH4;
+#define SPECIES5 CO;
+// define oxidizer composition
+#define TOXIDIZER 1249;
+#define OXIVAL0 0.232;
+#define OXIVAL1 0.768;
+#define OXIVAL2 0.;
+#define OXIVAL3 0.;
+#define OXIVAL4 0.;
+#define OXIVAL5 0.;
+// define fuel composition
+#define TFUEL 678;
+#define FUELVAL0 0.;
+#define FUELVAL1 0.;
+#define FUELVAL2 0.;
+#define FUELVAL3 1.;
+#define FUELVAL4 0.;
+#define FUELVAL5 0.;
+// mechanism
+#define MECHANISM files/mechanism/drm22.xml;
+#define GASID gas;
+#define TRANSPORT Mix;
+// properties
+#define PRESSURE 101325;
+// CHI
+#define CHIST 10.;
+// mesh
+#define AXISLENGTH 11;
+#define AXISLENGHTREFINED 101;
+// output
+#define BASENAME flamelet_;
+// restart
+#define RESTART NO;
+#define RESTARTFILE res_restart.ulf;
+// include template file
+#include flamelet_template.ulf;
