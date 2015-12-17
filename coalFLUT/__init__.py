@@ -10,7 +10,7 @@ import numpy as np
 import shutil
 import os
 import glob
-import pyFLUT.ulf.equilibrium as eq
+import multiprocessing as mp
 
 backup_dir = os.path.join(os.path.curdir, 'backup')
 
@@ -36,7 +36,9 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     ulf_result: pyFLUT.ulf.UlfData
         result object of the ULF simulation
     """
-    ulf_basename = ulf_settings['basename'] + "_Y{:4.3f}_chist{:1.1f}".format(Y, chist)
+    ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:1.1f}".format(fuel[
+                                                                                             'T'],Y,
+                                                                                        chist)
     ulf_result = ulf_basename + ".ulf"
     ulf_basename_run = ulf_basename+"run"
     ulf_input = ulf_basename_run + ".ulf"
@@ -52,21 +54,22 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
 
     runner.set('CHIST', chist)
     runner.set('TOXIDIZER', ox['T'])
-    runner.set('TFUEL', ox['TFUEL'])
+    runner.set('TFUEL', fuel['T'])
 
     try:
         print("Run {}".format(ulf_basename))
         runner.run()
         shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
         print("End run {}".format(ulf_basename))
-        if not os.path.exists(backup_dir):
-            os.mkdir(backup_dir)
-        for f in glob.glob(ulf_basename_run+ "*"):
-            shutil.move(f, backup_dir)
-        return ulf.read_ulf(ulf_result)
     except:
         print("Error running {}".format(ulf_basename))
         return None
+    if not os.path.exists(backup_dir):
+        os.mkdir(backup_dir)
+    for f in glob.glob(ulf_basename_run+ "*"):
+        shutil.move(f, os.path.join(backup_dir, f))
+    return ulf.read_ulf(ulf_result)
+
 
 def convert_mole_to_mass(X, gas):
     """
@@ -138,10 +141,11 @@ class coalFLUT(ulf.UlfDataSeries):
             self.oxidizer['X'] = normalize(self.oxidizer['X'])
             self.oxidizer['Y'] = convert_mole_to_mass(self.oxidizer['X'], self.gas)
         # define self.Y
+        self.chist = read_dict_list(**inp['mixture_fraction']['chist'])
         self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
         self.Tf = read_dict_list(**inp['coal']['T'])
         self.ulf_settings = inp['ulf']
-
+        self.z_points = inp['mixture_fraction']['Z']['points']
         self.chargas = {'Y': self._define_chargas()}
 
 
@@ -179,3 +183,23 @@ class coalFLUT(ulf.UlfDataSeries):
         chargas['CO'] = (mw[self.gas.species_index('CO')] * (1 + 0.5 * self.oxidizer['X'].get(
                 'CO', 0)/x_o2))/mass
         return chargas
+
+    def run(self, n_p=1):
+        # define here common settings to all cases
+        runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf", self.ulf_settings['solver'])
+        runner.set('MECHANISM', self.mechanism)
+        runner.set('AXISLENGHTREFINED', self.z_points)
+
+        if n_p > 1:
+            p = mp.Pool(processes=n_p)
+            procs = [p.apply_async(runUlf,
+                               args=(self.ulf_settings, Y, chist, {'T': Tf, 'Y': self.mix_fuels(
+                                       Y)},
+                                     self.oxidizer))
+                 for Tf in self.Tf for Y in self.Y for chist in self.chist]
+            results = [pi.get() for pi in procs]
+        else:
+            results = [runUlf(self.ulf_settings, Y, chist, {'T': Tf, 'Y': self.mix_fuels(Y)},
+                              self.oxidizer)
+                 for Tf in self.Tf for Y in self.Y for chist in self.chist]
+        super(coalFLUT, self).__init__(input_data=results, key_variable='Z')

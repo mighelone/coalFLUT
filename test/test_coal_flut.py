@@ -1,7 +1,6 @@
 """
 Test coalFLUT class
 """
-
 import pytest
 import coalFLUT
 import yaml
@@ -62,7 +61,15 @@ def test_run():
 
     runner = ulf.UlfRun(inp['ulf']['basename']+".ulf", inp['ulf']['solver'])
     runner.set('MECHANISM', inp['mechanism'])
-    assert isinstance(coalFLUT.runUlf(inp['ulf'], 0.2, 10, fuel, ox), ulf.UlfData)
+    Y = 0.2
+    chist = 10
+    Tf = fuel['T']
+    res = coalFLUT.runUlf(inp['ulf'], Y, chist, fuel, ox)
+    assert isinstance(res, ulf.UlfData)
+    assert res.variables['Tf'] == Tf
+    assert res.variables['chist'] == chist
+    assert res.variables['Y'] == Y
+
 
 
 def test_read_dictionary():
