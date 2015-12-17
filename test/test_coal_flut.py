@@ -37,6 +37,10 @@ def test_init():
     assert (np.linspace(*inp['mixture_fraction']['Y']['values']) == res.Y).all()
     os.remove(yaml_test)
 
+def test_chargas():
+    res = init_class()
+    assert sum(res.chargas.values()) == 1
+
 def test_run():
     inp = read_yaml()
     fuel = {

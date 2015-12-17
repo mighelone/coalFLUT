@@ -114,8 +114,10 @@ class coalFLUT(ulf.UlfDataSeries):
             self.oxidizer['Y'] = convert_mole_to_mass(self.oxidizer['X'], self.gas)
         # define self.Y
         self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
+        self.Tf = read_dict_list(**inp['coal']['T'])
         self.ulf_settings = inp['ulf']
 
+        self.chargas = self._define_chargas()
 
 
     def mix_fuels(self, Y):
@@ -132,3 +134,22 @@ class coalFLUT(ulf.UlfDataSeries):
         mix_fuel: {'T': T, 'Y': {sp0:y0, sp1:y1, ...}}
             mixed fuel dictionary
         """
+        pass
+
+    def _define_chargas(self):
+        chargas = {}
+        mw = self.gas.molecular_weights
+        mass = mw[self.gas.species_index('CO')]
+        x_o2 = self.oxidizer['X']['O2']
+        for sp, x in self.oxidizer['X'].items():
+            if not sp == 'O2':
+                mass += 0.5*x/x_o2 * mw[self.gas.species_index(sp)]
+        for sp, x in self.oxidizer['X'].items():
+            index = self.gas.species_index(sp)
+            if sp == 'O2':
+                chargas['O2'] = 0
+            else:
+                chargas[sp] = 0.5 * mw[index] * x/x_o2/mass
+        chargas['CO'] = (mw[self.gas.species_index('CO')] * (1 + 0.5 * self.oxidizer['X'].get(
+                'CO', 0)/x_o2))/mass
+        return chargas
