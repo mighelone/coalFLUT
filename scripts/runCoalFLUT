@@ -1,0 +1,23 @@
+#!/home/vascella/anaconda/bin/python
+
+#import sys
+#sys.path.insert(0, '../')
+
+import argparse
+import coalFLUT
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate a multi-dimensional FLUT for coal combustion"
+    )
+    parser.add_argument('input_yaml', action="store",
+                        help="YAML input file")
+    parser.add_argument('-n', action="store", dest="n_p", type=int,
+                        default=1, help="Number of processor")
+    parser.add_argument('-o', action="store", dest="out_file", type=str,
+                        default="coalFLUT.h5", help="Output HFD5 file")
+    argument = parser.parse_args()
+    #print parser.parse_args(['-n', '-o'])
+    res = coalFLUT.coalFLUT(argument.input_yaml)
+    res.run(n_p=argument.n_p)
+    res.write_bin(argument.out_file)
