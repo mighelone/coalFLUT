@@ -2,7 +2,6 @@
 coalFLUT
 ========
 """
-
 import pyFLUT.ulf as ulf
 import yaml
 import cantera
@@ -11,6 +10,7 @@ import shutil
 import os
 import glob
 import multiprocessing as mp
+import pyFLUT.ulf.equilibrium as equilibrium
 
 backup_dir = os.path.join(os.path.curdir, 'backup')
 
@@ -45,6 +45,9 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     shutil.copy(ulf_settings['basename'] + ".ulf", ulf_input)
     runner = ulf.UlfRun(ulf_input, ulf_settings["solver"])
     runner.set("BASENAME", ulf_basename_run)
+
+    eq = equilibrium.EquilibriumSolution(fuel=fuel, oxidizer=ox, mechanism=runner['MECHANISM'])
+    runner.set('ZST', eq.z_stoich())
 
     list_of_species = list(set(ox['Y'].keys() + fuel['Y'].keys()))
     for i, sp in enumerate(list_of_species):

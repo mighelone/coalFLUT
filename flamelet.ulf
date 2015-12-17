@@ -34,6 +34,7 @@
 #define PRESSURE 101325;
 // CHI
 #define CHIST 10.;
+#define ZST 0.1;
 // mesh
 #define AXISLENGTH 11;
 #define AXISLENGHTREFINED 101;
