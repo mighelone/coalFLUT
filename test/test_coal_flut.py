@@ -76,3 +76,7 @@ def test_read_dictionary():
     assert (coalFLUT.read_dict_list(**x) == np.linspace(*x['values'])).all()
     x = {'values': [0, 1, 11], 'method': 'linspace'}
     assert (coalFLUT.read_dict_list(**x) == np.linspace(*x['values'])).all()
+
+def test_normalize():
+    X = {'CO':1, 'CO2':0.5}
+    assert sum(coalFLUT.normalize(X).values()) == 1

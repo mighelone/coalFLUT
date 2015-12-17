@@ -83,6 +83,21 @@ def convert_mole_to_mass(X, gas):
     gas.X = [X.get(sp, 0) for sp in gas.species_names]
     return {sp:gas.Y[gas.species_index(sp)] for sp in X.keys()}
 
+def convert_mass_to_mole(Y, gas):
+    """
+    Convert
+    Parameters
+    ----------
+    Y: {sp0:x0, sp1:x1, ...}
+    gas: cantera.Solution
+
+    Returns
+    -------
+    X: {sp0:x0, sp1:x1, ...}
+    """
+    gas.Y = [Y.get(sp, 0) for sp in gas.species_names]
+    return {sp:gas.X[gas.species_index(sp)] for sp in Y.keys()}
+
 def read_dict_list(method, values):
     """
     Read a dictionary list and return the array
@@ -101,6 +116,10 @@ def read_dict_list(method, values):
     elif method in ('linspace', 'logspace', 'arange'):
         return getattr(np, method)(*values)
 
+def normalize(x):
+    sumx = sum(x.values())
+    return {sp:xi/sumx for sp, xi in x.items()}
+
 class coalFLUT(ulf.UlfDataSeries):
     def __init__(self, input_yaml):
         with open(input_yaml, "r") as f:
@@ -108,9 +127,15 @@ class coalFLUT(ulf.UlfDataSeries):
         self.mechanism = inp['mechanism']
         self.gas = cantera.Solution(self.mechanism)
         self.coal = inp['coal']
+        # TODO volatiles can be defined as C, H, O
         self.volatiles = inp['coal']['volatiles']
+        self.volatiles['Y'] = normalize(self.volatiles['Y'])
         self.oxidizer = inp['oxidizer']
-        if 'Y' not in self.oxidizer:
+        if 'Y' in self.oxidizer:
+            self.oxidizer['Y'] = normalize(self.oxidizer['Y'])
+            self.oxidizer['X'] = convert_mass_to_mole(self.oxidizer['Y'], self.gas)
+        else:
+            self.oxidizer['X'] = normalize(self.oxidizer['X'])
             self.oxidizer['Y'] = convert_mole_to_mass(self.oxidizer['X'], self.gas)
         # define self.Y
         self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
