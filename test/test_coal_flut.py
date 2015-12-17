@@ -59,3 +59,16 @@ def test_run():
     runner = ulf.UlfRun(inp['ulf']['basename']+".ulf", inp['ulf']['solver'])
     runner.set('MECHANISM', inp['mechanism'])
     assert isinstance(coalFLUT.runUlf(inp['ulf'], 0.2, 10, fuel, ox), ulf.UlfData)
+
+
+def test_read_dictionary():
+    x = [0, 1, 2]
+    assert (coalFLUT.read_dict_list(method='list', values=x) == x).all()
+    x = [0, 1, 101]
+    assert (coalFLUT.read_dict_list(method='linspace', values=x) == np.linspace(*x)).all()
+    x = [0, 1, 0.1]
+    assert (coalFLUT.read_dict_list(method='arange', values=x) == np.arange(*x)).all()
+    x = {'method': 'linspace', 'values': [0, 1, 11]}
+    assert (coalFLUT.read_dict_list(**x) == np.linspace(*x['values'])).all()
+    x = {'values': [0, 1, 11], 'method': 'linspace'}
+    assert (coalFLUT.read_dict_list(**x) == np.linspace(*x['values'])).all()

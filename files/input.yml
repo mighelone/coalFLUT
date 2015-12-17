@@ -4,7 +4,7 @@
 # temperature can be given as list, arange or linspace, logspace followed by a list of values
 # arange or linspace, logspace are numpy functions
 coal:
-  devolatilization:
+  volatiles:
     Y:
       CH4: 0.282
       C2H2: 0.420
