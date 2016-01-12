@@ -47,5 +47,5 @@ mixture_fraction:
 # additional settings can be modified directly from the reference ulf file:
 # "basename".ulf
 ulf:
-  solver: /opt/ulf/ulf
+  solver: /shared_home/vascella/Codes/ulf/build_git/ulf.x
   basename: flamelet

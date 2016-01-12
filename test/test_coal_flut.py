@@ -38,7 +38,7 @@ def test_init():
 
 def test_chargas():
     res = init_class()
-    assert sum(res.chargas.values()) == 1
+    assert sum(res.chargas['Y'].values()) == 1
 
 def test_run():
     inp = read_yaml()
@@ -59,7 +59,6 @@ def test_run():
             'N2': 0.77
         }
     }
-
     runner = ulf.UlfRun(inp['ulf']['basename']+".ulf", inp['ulf']['solver'])
     runner.set('MECHANISM', inp['mechanism'])
     Y = 0.2
