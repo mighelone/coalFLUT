@@ -4,6 +4,7 @@ coalFLUT
 """
 
 import pyFLUT.ulf as ulf
+import pyFLUT.ulf.equilibrium as eq
 import yaml
 import cantera
 import numpy as np
@@ -36,8 +37,11 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     ulf_result: pyFLUT.ulf.UlfData
         result object of the ULF simulation
     """
-    ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel[
-                                                                                             'T'],Y,
+    # ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel[
+    #                                                                                         'T'],Y,
+    #                                                                                    chist)
+    ulf_basename = ulf_settings['basename'] + "_Hf{:7.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel['H'],
+                                                                                        Y,
                                                                                         chist)
     ulf_result = ulf_basename + ".ulf"
     ulf_basename_run = ulf_basename+"run"
@@ -145,6 +149,14 @@ class coalFLUT(ulf.UlfDataSeries):
         self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
         self.Tf = read_dict_list(**inp['coal']['T'])
         self.ulf_settings = inp['ulf']
+        # calculate total enthalpy of fuel (assume Z=1, Y=1)
+        self.Hf = np.empty_like(self.Tf)
+        runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf", self.ulf_settings['solver'])
+        p = float(runner['PRESSURE'])
+        for i, _ in enumerate(self.Hf):
+            self.gas.TPY = self.Tf[i], p, ''.join('{}:{},'.format(sp, value) for sp, value in
+                                                  self.volatiles['Y'].iteritems())[:-1]
+            self.Hf[i] = self.gas.enthalpy_mass
         self.z_points = inp['mixture_fraction']['Z']['points']
         self.chargas = {'Y': self._define_chargas()}
 
@@ -193,13 +205,13 @@ class coalFLUT(ulf.UlfDataSeries):
         if n_p > 1:
             p = mp.Pool(processes=n_p)
             procs = [p.apply_async(runUlf,
-                               args=(self.ulf_settings, Y, chist, {'T': Tf, 'Y': self.mix_fuels(
-                                       Y)},
+                               args=(self.ulf_settings, Y, chist,
+                                     {'T': Tf, 'H':Hf, 'Y': self.mix_fuels(Y)},
                                      self.oxidizer))
-                 for Tf in self.Tf for Y in self.Y for chist in self.chist]
+                 for Tf, Hf in zip(self.Tf, self.Hf) for Y in self.Y for chist in self.chist]
             results = [pi.get() for pi in procs]
         else:
-            results = [runUlf(self.ulf_settings, Y, chist, {'T': Tf, 'Y': self.mix_fuels(Y)},
+            results = [runUlf(self.ulf_settings, Y, chist, {'T': Tf, 'H':Hf, 'Y': self.mix_fuels(Y)},
                               self.oxidizer)
-                 for Tf in self.Tf for Y in self.Y for chist in self.chist]
+                    for Tf, Hf in zip(self.Tf, self.Hf) for Y in self.Y for chist in self.chist]
         super(coalFLUT, self).__init__(input_data=results, key_variable='Z')

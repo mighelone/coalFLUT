@@ -38,10 +38,10 @@ mixture_fraction:
       - 0
       - 1
       - 11
-    chist:
-      method: list
-      values:
-        - 10
+  chist:
+    method: list
+    values:
+      - 10
 
 # ulf settings
 # additional settings can be modified directly from the reference ulf file:

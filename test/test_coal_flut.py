@@ -44,6 +44,7 @@ def test_run():
     inp = read_yaml()
     fuel = {
         'T': 600,
+        'H':1e8,
         'Y': {
             'CH4': 0.5,
             'CH2': 0.5,
@@ -64,9 +65,10 @@ def test_run():
     Y = 0.2
     chist = 10
     Tf = fuel['T']
+    Hf = fuel['H']
     res = coalFLUT.runUlf(inp['ulf'], Y, chist, fuel, ox)
     assert isinstance(res, ulf.UlfData)
-    assert res.variables['Tf'] == Tf
+    assert res.variables['Hf'] == Hf
     assert res.variables['chist'] == chist
     assert res.variables['Y'] == Y
 
@@ -92,3 +94,6 @@ def test_mix_fuels():
     res = init_class()
     assert res.mix_fuels(1)['CH4'] == res.volatiles['Y']['CH4']
     assert res.mix_fuels(0)['CO'] == res.chargas['Y']['CO']
+
+def test_hf():
+    res = init_class()
