@@ -66,3 +66,6 @@ target/
 
 # pyCharm
 .idea
+
+examples/case1/flamelet_Hf*
+examples/case1/flamelet_Tf*

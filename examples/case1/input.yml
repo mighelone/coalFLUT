@@ -13,8 +13,8 @@ coal:
   T:
     method: list
     values:
+      - 500
       - 1000
-      - 1200
 
 oxidizer:
   X:
@@ -38,7 +38,7 @@ mixture_fraction:
     values:
       - 0
       - 1
-      - 11
+      - 3
   chist:
     method: list
     values:

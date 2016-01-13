@@ -48,9 +48,11 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     shutil.copy(ulf_settings['basename'] + ".ulf", ulf_input)
     runner = ulf.UlfRun(ulf_input, ulf_settings["solver"])
     runner.set("BASENAME", ulf_basename_run)
+    pressure = float(runner['PRESSURE'])
 
     eq = equilibrium.EquilibriumSolution(fuel=fuel, oxidizer=ox, mechanism=runner['MECHANISM'])
     runner.set('ZST', eq.z_stoich())
+
 
     list_of_species = list(set(ox['Y'].keys() + fuel['Y'].keys()))
     for i, sp in enumerate(list_of_species):
@@ -60,7 +62,7 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
 
     runner.set('CHIST', chist)
     runner.set('TOXIDIZER', ox['T'])
-    runner.set('TFUEL', fuel['T'])
+    runner.set('TFUEL', calc_tf(fuel, eq.gas, pressure))
 
     try:
         print("Run {}".format(ulf_basename))
@@ -76,6 +78,12 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
         shutil.move(f, os.path.join(backup_dir, f))
     return ulf.read_ulf(ulf_result)
 
+def calc_tf(fuel, gas, pressure):
+    gas.HPY = fuel['H'], pressure, species_string(fuel['Y'])
+    return gas.T
+
+def species_string(X_dict):
+    return ''.join('{}:{},'.format(sp, value) for sp, value in X_dict.iteritems())[:-1]
 
 def convert_mole_to_mass(X, gas):
     """
