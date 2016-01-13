@@ -39,9 +39,8 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
     # ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel[
     #                                                                                         'T'],Y,
     #                                                                                    chist)
-    ulf_basename = ulf_settings['basename'] + "_Hf{:7.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel['H'],
-                                                                                        Y,
-                                                                                        chist)
+    ulf_basename = ulf_settings['basename'] + "_Hnorm{:4.3f}_Y{:4.3f}_chist{:4.3f}".format(
+            fuel['Hnorm'], Y, chist)
     ulf_result = ulf_basename + ".ulf"
     ulf_basename_run = ulf_basename+"run"
     ulf_input = ulf_basename_run + ".ulf"
@@ -62,7 +61,7 @@ def runUlf(ulf_settings, Y, chist, fuel, ox):
 
     runner.set('CHIST', chist)
     runner.set('TOXIDIZER', ox['T'])
-    runner.set('TFUEL', calc_tf(fuel, eq.gas, pressure))
+    runner.set('TFUEL', fuel['T'])
 
     try:
         print("Run {}".format(ulf_basename))
@@ -159,17 +158,16 @@ class coalFLUT(ulf.UlfDataSeries):
         self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
         self.Tf = read_dict_list(**inp['coal']['T'])
         self.ulf_settings = inp['ulf']
-        # calculate total enthalpy of fuel (assume Z=1, Y=1)
-        self.Hf = np.empty_like(self.Tf)
         runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf", self.ulf_settings['solver'])
-        p = float(runner['PRESSURE'])
-        for i, _ in enumerate(self.Hf):
-            self.gas.TPY = self.Tf[i], p, ''.join('{}:{},'.format(sp, value) for sp, value in
-                                                  self.volatiles['Y'].iteritems())[:-1]
-            self.Hf[i] = self.gas.enthalpy_mass
-        self.z_points = inp['mixture_fraction']['Z']['points']
+        pressure = float(runner['PRESSURE'])
         self.chargas = {'Y': self._define_chargas()}
 
+        # define H normalized between 0 and 1
+        # Hnorm = 0 corresponds to Tf min
+        # Hnorm = 1 corresponds to Tf max
+        self.Hnorm = (self.Tf - self.Tf.min())/(self.Tf.max()-self.Tf.min())
+
+        self.z_points = inp['mixture_fraction']['Z']['points']
 
     def mix_fuels(self, Y):
         """
@@ -216,12 +214,13 @@ class coalFLUT(ulf.UlfDataSeries):
             p = mp.Pool(processes=n_p)
             procs = [p.apply_async(runUlf,
                                args=(self.ulf_settings, Y, chist,
-                                     {'T': Tf, 'H':Hf, 'Y': self.mix_fuels(Y)},
+                                     {'T': Tf, 'Hnorm':Hnorm, 'Y': self.mix_fuels(Y)},
                                      self.oxidizer))
-                 for Tf, Hf in zip(self.Tf, self.Hf) for Y in self.Y for chist in self.chist]
+                 for Tf, Hnorm in zip(self.Tf, self.Hnorm) for Y in self.Y for chist in self.chist]
             results = [pi.get() for pi in procs]
         else:
-            results = [runUlf(self.ulf_settings, Y, chist, {'T': Tf, 'H':Hf, 'Y': self.mix_fuels(Y)},
-                              self.oxidizer)
-                    for Tf, Hf in zip(self.Tf, self.Hf) for Y in self.Y for chist in self.chist]
+            results = [runUlf(self.ulf_settings, Y, chist,
+                              {'T': Tf, 'Hnorm':Hnorm, 'Y': self.mix_fuels(Y)},self.oxidizer)
+                       for Tf, Hnorm in zip(self.Tf, self.Hnorm)
+                       for Y in self.Y for chist in self.chist]
         super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
