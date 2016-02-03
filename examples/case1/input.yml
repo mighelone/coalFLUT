@@ -3,24 +3,26 @@
 # in future we can also assign the C, H, O, N ultimate analysis
 # temperature can be given as list, arange or linspace, logspace followed by a list of values
 # arange or linspace, logspace are numpy functions
-coal:
-  volatiles:
-    Y:
-      CH4: 0.282
-      C2H2: 0.420
-      CO2: 0.269
-      N2: 0.028
+volatiles:
+  Y:
+    CH4: 0.282
+    C2H2: 0.420
+    CO2: 0.269
+    N2: 0.028
   T:
     method: list
     values:
       - 500
-      - 1000
 
 oxidizer:
   X:
     N2: 0.79
     O2: 0.21
-  T: 298
+  T:
+    method: list
+    values:
+      - 300
+      - 500
 
 mechanism:
   ../../files/mechanism/drm22.xml
@@ -38,7 +40,7 @@ mixture_fraction:
     values:
       - 0
       - 1
-      - 3
+      - 2
   chist:
     method: list
     values:
