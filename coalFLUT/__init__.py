@@ -12,6 +12,8 @@ import glob
 import multiprocessing as mp
 import pyFLUT.ulf.equilibrium as equilibrium
 
+T_limit = 200
+
 #TODO calculate Tf from the normalized enthalpy. The actual value of enthalpy and the normalized
 # should be passed to the run function
 
@@ -305,3 +307,88 @@ class coalFLUT(ulf.UlfDataSeries):
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
         super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
+
+    def extend_enthalpy_range(self, h_levels):
+        '''
+        Extend the enthalpy range
+
+        Parameters
+        ----------
+        h_levels: array of levels (they must be negative)
+
+        '''
+        from pyFLUT.ulf.ulfSeriesReader import ulf_to_cantera
+
+        def add_levels(stream, h_levels):
+            return np.insert(stream['H'], 0,
+                       (stream['H'].min() + h_levels*(stream['H'].max()-stream['H'].min())))
+        if isinstance(h_levels, float):
+            h_levels = np.array([h_levels])
+        elif isinstance(h_levels, list):
+            h_levels = np.array(h_levels)
+
+        self.volatiles['H'], self.chargas['H'], self.oxidizer['H'] = (add_levels(stream, h_levels)
+             for stream in [self.volatiles, self.chargas, self.oxidizer])
+
+        data_hmin = np.take(self.data, 0, axis=self.input_variable_index('Hnorm'))
+
+        i_species = [self.output_variable_index(sp) for sp in self.gas.species_names]
+        i_T = self.output_variable_index('T')
+        i_Z = self.output_variable_index('Z')
+        i_Y = self.output_variable_index('Y')
+        i_hMean = self.output_variable_index('hMean')
+        i_Hnorm_o = self.output_variable_index('Hnorm')
+
+        shape = list(self.data.shape)
+        shape[self.input_variable_index('Hnorm')] = len(h_levels)
+        data_new = np.empty(shape)
+
+        n_l = len(h_levels)
+        pressure = self['p'].ravel()[0]
+
+        i_Hnorm = self.input_variable_index('Hnorm')
+
+
+        for index in np.ndindex(data_hmin.shape[:-1]):
+            datai = data_hmin[index]
+            y = np.take(datai, i_species)
+            Z = np.take(datai, i_Z)
+            Y = np.take(datai, i_Y)
+            oneY_onealphac = (1-Y)*(1+self.chargas['alphac'])
+            Hf = (Y * self.volatiles['H'][:n_l] + oneY_onealphac * self.chargas['H'][:n_l])/\
+                 (Y + oneY_onealphac)
+            H = Z * Hf + (1-Z)*self.oxidizer['H'][:n_l]
+
+            for i_H, Hi in enumerate(H):
+                self.gas.HPY = Hi, pressure, y
+                T = self.gas.T
+                index_new = list(index)
+                index_new.insert(i_Hnorm, i_H)
+                index_new = tuple(index_new)
+
+                for var, i in self.output_dict.iteritems():
+                    if var == 'hMean':
+                        value = H[i_H]
+                    elif var in ulf_to_cantera.keys():
+
+                        value = getattr(self.gas, ulf_to_cantera.get(var, var)) if T > T_limit \
+                            else 0
+                    elif 'reactionRate_' in var:
+                        if T > T_limit:
+                            sp_index = self.gas.species_index(var.split('_')[1])
+                            value = self.gas.net_production_rates[sp_index]/self.gas.density
+                        else:
+                            value = 0
+                    #elif var in self.gas.species_names:
+                    #    value = self.gas.Y[self.gas.species_index(var)]
+                    elif var == 'alpha':
+                        value = self.gas.thermal_conductivity / self.gas.density / self.gas.cp if\
+                            T > T_limit else 0
+                    elif var == 'Hnorm':
+                        value = h_levels[i_H]
+                    else:
+                        value = data_hmin[index][i]
+                    data_new[index_new][i] = value
+
+        self.data = np.concatenate((data_new, self.data), axis=i_Hnorm)
+        self.input_dict['Hnorm'] = np.concatenate((h_levels, self.input_dict['Hnorm']))
