@@ -86,11 +86,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
         'H'].min()),
                                 pressure, fuel['Y']))
     Ho = ox['H'].min() + Hnorm_t * (ox['H'].max() - ox['H'].min())
-    # runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
-    # print("Run {}".format(ulf_basename))
-    # runner.run()
-    # shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
-    # print("End run {}".format(ulf_basename))
+    runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
     try:
         print("Run {}".format(ulf_basename))
         runner.run()
