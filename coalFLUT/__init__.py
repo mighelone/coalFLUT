@@ -46,7 +46,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     # ulf_basename = ulf_settings['basename'] + "_Tf{:4.1f}_Y{:4.3f}_chist{:4.3f}".format(fuel[
     #                                                                                         'T'],Y,
     #                                                                                    chist)
-    ulf_basename = ulf_settings['basename'] + "_Hnorm{:4.3f}_Y{:4.3f}_chist{:4.3f}".format(Hnorm, Y, chist)
+    ulf_basename = ulf_settings['basename'] + "_Hnorm{:5.4f}_Y{:5.4f}_chist{:5.4f}".format(Hnorm, Y, chist)
     ulf_result = ulf_basename + ".ulf"
     ulf_basename_run = ulf_basename+"run"
     ulf_input = ulf_basename_run + ".ulf"
