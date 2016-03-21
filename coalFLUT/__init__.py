@@ -80,9 +80,11 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     runner.set('DHMAX', DH_max)
 
     #Hf = fuel['H'].min() + Hnorm * (fuel['H'].max() - fuel['H'].min())
-    runner.set('TFUEL', calc_tf(eq.gas, fuel['H'].min() + Hnorm * (fuel['H'].max() - fuel['H'].min()),
+    Hnorm_t = Hnorm if Hnorm > 0 else 0
+    runner.set('TFUEL', calc_tf(eq.gas, fuel['H'].min() + Hnorm_t * (fuel['H'].max() - fuel[
+        'H'].min()),
                                 pressure, fuel['Y']))
-    Ho = ox['H'].min() + Hnorm * (ox['H'].max() - ox['H'].min())
+    Ho = ox['H'].min() + Hnorm_t * (ox['H'].max() - ox['H'].min())
     runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
     print("Run {}".format(ulf_basename))
     runner.run()
