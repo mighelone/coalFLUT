@@ -11,6 +11,7 @@ import os
 import glob
 import multiprocessing as mp
 import pyFLUT.ulf.equilibrium as equilibrium
+from termcolor import colored
 
 T_limit = 200
 
@@ -85,19 +86,19 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
         'H'].min()),
                                 pressure, fuel['Y']))
     Ho = ox['H'].min() + Hnorm_t * (ox['H'].max() - ox['H'].min())
-    runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
-    print("Run {}".format(ulf_basename))
-    runner.run()
-    shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
-    print("End run {}".format(ulf_basename))
-    #try:
-    #    print("Run {}".format(ulf_basename))
-    #    runner.run()
-    #    shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
-    #    print("End run {}".format(ulf_basename))
-    #except:
-    #    print("Error running {}".format(ulf_basename))
-    #    return None
+    # runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
+    # print("Run {}".format(ulf_basename))
+    # runner.run()
+    # shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
+    # print("End run {}".format(ulf_basename))
+    try:
+        print("Run {}".format(ulf_basename))
+        runner.run()
+        shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
+        print("End run {}".format(ulf_basename))
+    except:
+        print(colored("Error running {}".format(ulf_basename),'red'))
+        return None
     if not os.path.exists(backup_dir):
         os.mkdir(backup_dir)
     for f in glob.glob(ulf_basename_run+ "*"):
@@ -312,7 +313,7 @@ class coalFLUT(ulf.UlfDataSeries):
             procs = [p.apply_async(runUlf,
                                args=(self.ulf_settings, Y, chist, Hnorm,
                                      self.mix_fuels(Y),
-                                     self.oxidizer))
+                                     self.oxidizer, self.z_DHmin))
                  for Hnorm in self.Hnorm for Y in self.Y for chist in self.chist]
             results = [pi.get() for pi in procs]
         else:

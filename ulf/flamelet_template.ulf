@@ -1,0 +1,301 @@
+runTime
+{
+	startTime		  STARTTIME;
+	endTime			  ENDTIME;
+	writeInterval	  WRITEINTERVAL;
+	timePrecision	  2;
+}
+
+solution
+{
+	requiredFields ( chi );
+	additionalUpdateFunction
+	{
+		eqID updateEnthalpy;
+	}
+	solutionEntries
+	{
+		//T
+		//{
+		//	eqID        T_flameletLe1DH;
+        //    eqType      ode;
+		//	minValue    0.0;
+		//	maxValue    3000.0;
+		//	eqParameters 
+		//	{		
+		//		DHmax DHMAX; 
+		//	}
+		//	boundaryConditions 
+		//	{
+		//		TempOxidizer
+		//		{
+		//			patchList ( oxidizer );
+		//			eqID    fixedValue_newton; 
+        //            eqType  algebraic;
+		//			eqParameters 
+		//			{
+		//				value TOXIDIZER;
+		//			}
+		//		}
+		//		TempFuel
+		//		{
+		//			patchList ( fuel );
+		//			eqID    fixedValue_newton; 
+        //            eqType  algebraic;
+		//			eqParameters 
+		//			{
+		//				value TFUEL;
+		//			}
+		//		}
+		//	}
+		//}
+		Yi
+		{
+			eqID        Yi_flameletLe1;
+            eqType      ode;
+			minValue    0.0;
+			maxValue    1.0;
+			boundaryConditions 
+			{
+				oxidBC
+				{
+					patchList ( oxidizer );
+					eqID    fixedValue_newton; 
+                    eqType  algebraic;
+					eqParameters 
+					{
+						value
+						{
+							default 0.0; 
+							SPECIES0 OXIVAL0;
+							SPECIES1 OXIVAL1;
+							SPECIES2 OXIVAL2;
+							SPECIES3 OXIVAL3;
+							SPECIES4 OXIVAL4;
+							SPECIES5 OXIVAL5;
+							SPECIES6 OXIVAL6;
+						}
+					}
+				}
+				fuelBC
+				{
+					patchList ( fuel );
+					eqID    fixedValue_newton; 
+                    eqType  algebraic;
+					eqParameters 
+					{
+						value
+						{
+							default 0.0;
+							SPECIES0 FUELVAL0;
+							SPECIES1 FUELVAL1;
+							SPECIES2 FUELVAL2;
+							SPECIES3 FUELVAL3;
+							SPECIES4 FUELVAL4;
+							SPECIES5 FUELVAL5;
+							SPECIES6 FUELVAL6;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+solver
+{
+	solverType ulfNewton;
+	absTol 1e-7;
+	relTol 1e-5;
+	maxSteps 100000;
+	maxOrder 8;
+    maxJacStationaryAge 10;
+    maxJacTransientAge 20;
+    nTimeSteps 10;
+    dtMax 1.0e-1;
+    dtMin 1.0e-8;
+    maxDampSteps 6;
+    dampFactor 2.0;
+    logLevel 3;
+	//absTol 1e-9;
+	//relTol 1e-6;
+	//maxSteps 100000;
+	//maxOrder 8;
+    //maxJacStationaryAge 10;
+    //maxJacTransientAge 20;
+    //nTimeSteps 40;
+    //dtMax 1.0e-4;
+    //dtMin 1.0e-8;
+    //maxDampSteps 6;
+    //dampFactor 2.0;
+    //logLevel 2;
+}
+
+libs( "libequations.so", "libflameletH.so" );
+
+resultFileBaseName BASENAME;
+resultType ASCII;
+
+restart RESTART;
+restartFile RESTARTFILE;
+restartType ASCII;
+
+mesh
+{
+	dimensions 1;
+	constructionFrom cartesianLimits;
+	axisNames( Z );
+	axisLength( AXISLENGTH );
+	cartesianMin( 0 );
+	cartesianMax( 1 );
+    meshAdaption
+	{
+        eqID oldRemeshing;
+		Z
+		{
+            eqID equidistantAxis;
+			referenceField T;
+			additionalPoints 10;
+            refinementTarget AXISLENGHTREFINED;
+		}
+	}
+	patches
+	{
+		oxidizer
+		{
+			patchMin ( 0 );
+			patchMax ( 0 );
+		}
+		fuel
+		{
+			patchMin ( 1 );
+			patchMax ( 1 );
+			patchNormal( -1 );
+		}
+	}
+}
+
+mixture
+{
+    mainMixture   theMixture;
+    theMixture
+    {
+        mixtureType       CANTERA_MIXTURE;
+        //mechanism       gri30.xml;
+        //gasId           gri30_mix;
+        //mechanism       ch4_smooke.xml;
+        mechanism       MECHANISM;
+        gasId           GASID;
+        transportType   TRANSPORT;
+        //fluidType       dcs;
+        //mechanism       ch4_grimech;
+        //egFile          "EGlib/src/EGlib/ch4_grimech";
+        mixtureEntries
+        {
+            tdot
+            {
+                updateType standard;
+            }
+            reactionRate
+            {
+                updateType standard;
+            }
+            hMean
+            {
+                updateType standard;
+            }
+        }
+    }
+}
+preProcessing
+{
+	eqID setEnthalpy;
+	eqParameters 
+	{
+		DHmax DHMAX;
+		Zmax ZST;
+	}
+	T_oxidizer TOXIDIZER;
+	T_fuel TFUEL;
+		oxidizer
+		{
+			SPECIES0 OXIVAL0;
+			SPECIES1 OXIVAL1;
+			SPECIES2 OXIVAL2;
+			SPECIES3 OXIVAL3;
+			SPECIES4 OXIVAL4;
+			SPECIES5 OXIVAL5;
+			SPECIES6 OXIVAL6;
+		}
+		fuel
+		{
+			SPECIES0 FUELVAL0;
+			SPECIES1 FUELVAL1;
+			SPECIES2 FUELVAL2;
+			SPECIES3 FUELVAL3;
+			SPECIES4 FUELVAL4;
+			SPECIES5 FUELVAL5;
+			SPECIES6 FUELVAL6;
+		}
+}
+fields
+{
+	default
+	{
+		referenceFrame cellCentered;
+		interpolate YES;
+		frozen NO;
+		write NO;
+		fixedValue 0.0;
+		firstOrder CDS;
+		secondOrder CDS;
+		diffusive CDS;
+	}
+	YiDefault
+	{
+		fixedValue 0.0;
+		write YES;
+	}
+	reactionRateiDefault
+	{
+		write YES;
+	}
+	chi
+	{
+		//readFrom chi.ulf;
+		//readType ASCII;
+        eqID erfc_startProfile;
+        eqParameters
+        {
+            Zst ZST;
+            chiSt CHIST; 
+        }
+		frozen YES;
+		write YES;
+	}
+	T
+	{
+		fixedValue 300;
+		write YES;
+	}
+	p
+	{
+		fixedValue PRESSURE;
+		write YES;
+	}
+	rho
+	{
+		write YES;
+	}
+	hMean
+	{
+		write YES;
+		frozen YES;
+		eqID setEnthalpyProfile;
+			eqParameters 
+			{
+				DHmax DHMAX;
+				Zmax ZMAX;
+			}
+	}
+}

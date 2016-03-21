@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
         name='coalFLUT',
-        version='0.0.1',
+        version='0.0.2',
         packages=['test', 'coalFLUT'],
         scripts = ['scripts/runCoalFLUT'],
         url='',

@@ -1,0 +1,9 @@
+*.so
+BzzFile.txt
+ULF_DUMP.ulf
+.ipynb_checkpoints/
+flamelet_res*
+flamelet_run.ulf*
+log
+*.bak
+flameletStd_res*

@@ -68,4 +68,8 @@ target/
 .idea
 
 examples/case1/flamelet_Hf*
-examples/case1/flamelet_Tf*
+examples/case1/flamelet_Tf*reduced_enthalpy/flamelet_Hnorm-*
+reduced_enthalpy/flamelet_Hnorm*
+BzzFile.txt
+reduced_enthalpy/backup/
+*.bak
