@@ -21,7 +21,7 @@ T_limit = 200
 
 backup_dir = os.path.join(os.path.curdir, 'backup')
 
-def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox):
+def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     """
     Run ULF solver for a given Y and chist
 
@@ -70,6 +70,14 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox):
         runner.set('OXIVAL{}'.format(i), ox['Y'].get(sp, 0))
 
     runner.set('CHIST', chist)
+    runner.set('ZMAX', z_DHmin)
+    if Hnorm > 0:
+        DH_max = 0
+    else:
+        H_1 = z_DHmin * fuel['H'].max() + (1-z_DHmin) * ox['H'].max()
+        H_0 = z_DHmin * fuel['H'].min() + (1-z_DHmin) * ox['H'].min()
+        DH_max = -Hnorm*(H_1 - H_0)
+    runner.set('DHMAX', DH_max)
 
     #Hf = fuel['H'].min() + Hnorm * (fuel['H'].max() - fuel['H'].min())
     runner.set('TFUEL', calc_tf(eq.gas, fuel['H'].min() + Hnorm * (fuel['H'].max() - fuel['H'].min()),
@@ -204,8 +212,8 @@ class coalFLUT(ulf.UlfDataSeries):
             self.oxidizer['Y'] = convert_mole_to_mass(self.oxidizer['X'], self.gas)
         self.oxidizer['T'] = read_dict_list(**inp['oxidizer']['T'])
         # define self.Y
-        self.chist = read_dict_list(**inp['mixture_fraction']['chist'])
-        self.Y = read_dict_list(**inp['mixture_fraction']['Y'])
+        self.chist = read_dict_list(**inp['flut']['chist'])
+        self.Y = read_dict_list(**inp['flut']['Y'])
 
         n_H = len(self.volatiles['T'])
         # check if volatile and oxidizer temperature levels are the same
@@ -224,17 +232,22 @@ class coalFLUT(ulf.UlfDataSeries):
         # Hnorm = 0 corresponds to Tf min
         # Hnorm = 1 corresponds to Tf max
         #self.Hnorm = (self.Tf - self.Tf.min())/(self.Tf.max()-self.Tf.min())
-        self.Hnorm = np.linspace(0, 1, n_H)
+        Hnorm = np.linspace(0, 1, n_H)
+        Hnorm_negative = read_dict_list(**inp['flut']['Hnorm']['negative'])
+        self.z_DHmin = inp['flut']['Hnorm']['Z']
+        self.Hnorm = np.concatenate([Hnorm_negative, Hnorm])
 
         H = [np.linspace(calc_hf(self.gas, fuel['T'].min(), pressure, fuel['Y']),
                          calc_hf(self.gas, fuel['T'].max(), pressure, fuel['Y']),
                          n_H)
              for fuel in [self.volatiles, self.chargas, self.oxidizer]]
-        self.volatiles['H'] = H[0]
-        self.chargas['H'] = H[1]
-        self.oxidizer['H'] = H[2]
+        # self.volatiles['H'] = np.concatenate([np.ones_like(Hnorm_negative)*H[0][0], H[0]])
+        #self.chargas['H'] = np.concatenate([H[1][0]]*len(Hnorm_negative), H[1]) # H[1]
+        #self.oxidizer['H'] = np.concatenate([H[2][0]]*len(Hnorm_negative), H[2]) #H[2]
+        self.volatiles['H'], self.chargas['H'], self.oxidizer['H'] = \
+            (np.concatenate([np.ones_like(Hnorm_negative)*H[i][0], H[i]]) for i in range(3))
 
-        self.z_points = inp['mixture_fraction']['Z']['points']
+        self.z_points = inp['flut']['Z']['points']
 
     def mix_fuels(self, Y):
         """
@@ -303,7 +316,7 @@ class coalFLUT(ulf.UlfDataSeries):
         else:
             results = [runUlf(self.ulf_settings, Y, chist, Hnorm,
                                      self.mix_fuels(Y),
-                                     self.oxidizer)
+                                     self.oxidizer, self.z_DHmin)
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
         super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
