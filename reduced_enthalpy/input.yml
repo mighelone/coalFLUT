@@ -10,16 +10,16 @@ volatiles:
     CO2: 0.269
     N2: 0.028
   T:
-    method: list
-    values: [300, 400]
+    min: 300
+    max: 600
 
 oxidizer:
   X:
     N2: 0.79
     O2: 0.21
   T:
-    method: list
-    values: [300, 400]
+    min: 300
+    max: 500
 
 mechanism:
   ../files/mechanism/drm22.xml
@@ -41,14 +41,17 @@ flut:
     values: [0.1]
 
   Hnorm:
+    positive:
+      points: 0
     negative:
         method: list
-        values: [-1, -0.5]
+        values: [-1]
     Z: 0.1
 
 # ulf settings
 # additional settings can be modified directly from the reference ulf file:
 # "basename".ulf
 ulf:
+  #solver: /opt/ulf/ulf
   solver: /shared_home/vascella/Codes/ulf/build_git2/ulf.x
   basename: flamelet

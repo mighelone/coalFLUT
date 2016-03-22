@@ -206,7 +206,7 @@ class coalFLUT(ulf.UlfDataSeries):
         self.volatiles['Y'] = normalize(inp['volatiles']['Y'])
         # self.volatiles['T'] = read_dict_list(**inp['volatiles']['T'])
         self.volatiles['T'] = np.array([inp['volatiles']['T']['min'],
-                                        inp['volatiles']['T']['min']])
+                                        inp['volatiles']['T']['max']])
 
 
         self.oxidizer = {}
@@ -220,7 +220,7 @@ class coalFLUT(ulf.UlfDataSeries):
                                                       self.gas)
         # self.oxidizer['T'] = read_dict_list(**inp['oxidizer']['T'])
         self.oxidizer['T'] = np.array([inp['oxidizer']['T']['min'],
-                                        inp['oxidizer']['T']['min']])
+                                        inp['oxidizer']['T']['max']])
         # define self.Y
         self.chist = read_dict_list(**inp['flut']['chist'])
         self.Y = read_dict_list(**inp['flut']['Y'])
@@ -247,13 +247,11 @@ class coalFLUT(ulf.UlfDataSeries):
         self.z_DHmin = inp['flut']['Hnorm']['Z']
         self.Hnorm = np.concatenate([Hnorm_negative, Hnorm])
 
-        H = [np.linspace(calc_hf(self.gas, fuel['T'].min(), pressure, fuel['Y']),
-                         calc_hf(self.gas, fuel['T'].max(), pressure, fuel['Y']),
-                         n_H)
+        H = [np.array([calc_hf(self.gas, fuel['T'].min(), pressure, fuel['Y']),
+                         calc_hf(self.gas, fuel['T'].max(), pressure, fuel['Y'])])
              for fuel in [self.volatiles, self.chargas, self.oxidizer]]
         self.volatiles['H'], self.chargas['H'], self.oxidizer['H'] = \
-            (np.concatenate([np.ones_like(Hnorm_negative)*H[i][0], H[i]])
-             for i in range(3))
+            (H[i] for i in range(3))
 
         self.z_points = inp['flut']['Z']['points']
 
