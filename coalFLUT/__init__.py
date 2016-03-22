@@ -89,17 +89,17 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     runner.set('TOXIDIZER', calc_tf(eq.gas, Ho, pressure, ox['Y']))
     try:
         print("Run {}".format(ulf_basename))
-        runner.run()
+        results = runner.run()
         shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
         print("End run {}".format(ulf_basename))
     except:
         print(colored("Error running {}".format(ulf_basename),'red'))
-        return None
+        results = None
     if not os.path.exists(backup_dir):
         os.mkdir(backup_dir)
     for f in glob.glob(ulf_basename_run+ "*"):
         shutil.move(f, os.path.join(backup_dir, f))
-    return ulf.read_ulf(ulf_result)
+    return results
 
 def calc_tf(gas, H, pressure, Y):
     """
@@ -318,7 +318,7 @@ class coalFLUT(ulf.UlfDataSeries):
                                      self.oxidizer, self.z_DHmin)
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
-        super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
+        # super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
 
     def extend_enthalpy_range(self, h_levels):
         '''
