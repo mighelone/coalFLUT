@@ -41,8 +41,12 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     ulf_result: pyFLUT.ulf.UlfData
         result object of the ULF simulation
     """
+    ulf_format = ulf_settings.get('format', '{:5.4f}')
+    # ulf_basename = ulf_settings['basename'] + \
+    #     "_Hnorm{:6.5f}_Y{:6.5f}_chist{:6.5f}".format(Hnorm, Y, chist)
     ulf_basename = ulf_settings['basename'] + \
-        "_Hnorm{:5.4f}_Y{:5.4f}_chist{:5.4f}".format(Hnorm, Y, chist)
+        "_".join([var+ulf_format.format(eval(var))
+                 for var in ['Hnorm', 'Y', 'chist']])
     ulf_result = ulf_basename + ".ulf"
     ulf_basename_run = ulf_basename+"run"
     ulf_input = ulf_basename_run + ".ulf"
@@ -208,7 +212,6 @@ class coalFLUT(ulf.UlfDataSeries):
         self.volatiles['T'] = np.array([inp['volatiles']['T']['min'],
                                         inp['volatiles']['T']['max']])
 
-
         self.oxidizer = {}
         if 'Y' in inp['oxidizer']:
             self.oxidizer['Y'] = normalize(inp['oxidizer']['Y'])
@@ -220,7 +223,7 @@ class coalFLUT(ulf.UlfDataSeries):
                                                       self.gas)
         # self.oxidizer['T'] = read_dict_list(**inp['oxidizer']['T'])
         self.oxidizer['T'] = np.array([inp['oxidizer']['T']['min'],
-                                        inp['oxidizer']['T']['max']])
+                                       inp['oxidizer']['T']['max']])
         # define self.Y
         self.chist = read_dict_list(**inp['flut']['chist'])
         self.Y = read_dict_list(**inp['flut']['Y'])
@@ -248,7 +251,7 @@ class coalFLUT(ulf.UlfDataSeries):
         self.Hnorm = np.concatenate([Hnorm_negative, Hnorm])
 
         H = [np.array([calc_hf(self.gas, fuel['T'].min(), pressure, fuel['Y']),
-                         calc_hf(self.gas, fuel['T'].max(), pressure, fuel['Y'])])
+                       calc_hf(self.gas, fuel['T'].max(), pressure, fuel['Y'])])
              for fuel in [self.volatiles, self.chargas, self.oxidizer]]
         self.volatiles['H'], self.chargas['H'], self.oxidizer['H'] = \
             (H[i] for i in range(3))
@@ -331,7 +334,14 @@ class coalFLUT(ulf.UlfDataSeries):
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
         # super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
-        return results
+        # cleanup results from None
+        results = [res for res in results if res]
+        # ulf_res = []
+        # for h in self.Hnorm:
+        #    results_h = [results.pop(i) for i, res in enumerate(results)
+        #                 if res.variable['Hnorm'] == h]
+        #    ulfi = ulf.ulfSeriesReader(input_data=results_h, key_variable='Z')
+        #    T_max = ulfi['T'].max(axis=3)
 
     def extend_enthalpy_range(self, h_levels):
         '''
