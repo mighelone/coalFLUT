@@ -42,9 +42,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
         result object of the ULF simulation
     """
     ulf_format = ulf_settings.get('format', '{:5.4f}')
-    # ulf_basename = ulf_settings['basename'] + \
-    #     "_Hnorm{:6.5f}_Y{:6.5f}_chist{:6.5f}".format(Hnorm, Y, chist)
-    ulf_basename = ulf_settings['basename'] + \
+    ulf_basename = ulf_settings['basename'] + '_' + \
         "_".join([var+ulf_format.format(eval(var))
                  for var in ['Hnorm', 'Y', 'chist']])
     ulf_result = ulf_basename + ".ulf"
@@ -189,7 +187,7 @@ def read_dict_list(method, values):
     numpy.ndarray
     """
     if method == 'list':
-        return np.array(values)
+        return np.array([float(v) for v in values])
     elif method in ('linspace', 'logspace', 'arange'):
         return getattr(np, method)(*values)
 
