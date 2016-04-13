@@ -194,6 +194,30 @@ def normalize(x):
     sumx = sum(x.values())
     return {sp: xi/sumx for sp, xi in x.items()}
 
+def fix_composition(stream, gas):
+    """
+    Given a stream dictionary, normalize the composition and return a new
+    string dictionary with normalized values, mole and mass fractions
+    Parameters
+    ----------
+    stream: dict
+        {'Y':{'CH4':1}} or {'X':{'CH4':1}}
+    gas: cantera.Solution
+        cantera solution object
+
+    Returns
+    -------
+    dict
+    """
+    if "Y" in stream:
+        stream["Y"] = normalize(stream["Y"])
+        stream["X"] = convert_mass_to_mole(stream["Y"], gas)
+    else:
+        stream["X"] = normalize(stream["X"])
+        stream["Y"] = convert_mole_to_mass(stream["X"], gas)
+    return stream
+
+
 
 class coalFLUT(ulf.UlfDataSeries):
     def __init__(self, input_yaml):
