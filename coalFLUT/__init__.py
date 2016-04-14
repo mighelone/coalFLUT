@@ -211,13 +211,14 @@ def fix_composition(stream, gas):
     -------
     dict
     """
+    stream_fixed = stream.copy()
     if "Y" in stream:
-        stream["Y"] = normalize(stream["Y"])
-        stream["X"] = convert_mass_to_mole(stream["Y"], gas)
+        stream_fixed["Y"] = normalize(stream["Y"])
+        stream_fixed["X"] = convert_mass_to_mole(stream["Y"], gas)
     else:
-        stream["X"] = normalize(stream["X"])
-        stream["Y"] = convert_mole_to_mass(stream["X"], gas)
-    return stream
+        stream_fixed["X"] = normalize(stream["X"])
+        stream_fixed["Y"] = convert_mole_to_mass(stream["X"], gas)
+    return stream_fixed
 
 
 
