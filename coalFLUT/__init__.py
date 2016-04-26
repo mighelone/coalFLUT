@@ -173,7 +173,7 @@ def convert_mass_to_mole(Y, gas):
     return {sp: gas.X[gas.species_index(sp)] for sp in Y.keys()}
 
 
-def read_dict_list(method, values):
+def read_dict_list(**kwargs):
     """
     Read a dictionary list and return the array
 
@@ -186,6 +186,8 @@ def read_dict_list(method, values):
     -------
     numpy.ndarray
     """
+    method = kwargs['method']
+    values = kwargs['values']
     if method == 'list':
         return np.array([float(v) for v in values])
     elif method in ('linspace', 'logspace', 'arange'):
