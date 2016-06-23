@@ -58,7 +58,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     # dumb fuel and oxidizer temperature equilibrium necessary only
     # for the stoichiomtric conditions
     eq = equilibrium.EquilibriumSolution(fuel=fuel, oxidizer=ox,
-                                         mechanism=runner['MECHANISM'])
+                                         mechanism=runner['MECHANISM']+'.xml')
     runner.set('ZST', eq.z_stoich())
 
     list_of_species = list(set(ox['Y'].keys() + fuel['Y'].keys()))
@@ -89,7 +89,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
         print("Run {}".format(ulf_basename))
         results = runner.run()
         shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
-        print("End run {}".format(ulf_basename))
+        print(colored("End run {}".format(ulf_basename), 'green'))
     except:
         print(colored("Error running {}".format(ulf_basename), 'red'))
         results = None
@@ -340,7 +340,7 @@ class coalFLUT(ulf.UlfDataSeries):
         # define here common settings to all cases
         runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf",
                             self.ulf_settings['solver'])
-        runner.set('MECHANISM', self.mechanism)
+        runner.set('MECHANISM', self.mechanism[:-4])
         runner.set('AXISLENGHTREFINED', self.z_points)
 
         if n_p > 1:
@@ -358,9 +358,9 @@ class coalFLUT(ulf.UlfDataSeries):
                               self.oxidizer, self.z_DHmin)
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
-        # super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
+        super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
         # cleanup results from None
-        results = [res for res in results if res]
+        # results = [res for res in results if res]
         # ulf_res = []
         # for h in self.Hnorm:
         #    results_h = [results.pop(i) for i, res in enumerate(results)

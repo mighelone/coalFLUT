@@ -73,3 +73,7 @@ reduced_enthalpy/flamelet_Hnorm*
 BzzFile.txt
 reduced_enthalpy/backup/
 *.bak
+ULF_DUMP.ulf
+flamelet_Hnorm*
+examples/case1/coalFLUT.h5
+examples/case1/flamelet_init.ulf

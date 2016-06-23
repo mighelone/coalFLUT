@@ -5,28 +5,21 @@
 # arange or linspace, logspace are numpy functions
 volatiles:
   Y:
-    CH4: 0.282
-    C2H2: 0.420
-    CO2: 0.269
-    N2: 0.028
+    CH4: 1
   T:
-    method: list
-    values:
-      - 500
+    min: 300
+    max: 700
 
 oxidizer:
   X:
     N2: 0.79
     O2: 0.21
   T:
-    method: list
-    values:
-      - 300
-      - 500
+    min: 300
+    max: 600
 
 mechanism:
-  ../../files/mechanism/drm22.xml
-  #files/mechanism/gri30.xml
+  ch4_smooke.xml
 
 # two mixture fractions are defined Z1 and Z2, which are respectively the devolatilization and
 # the char burnout gases
@@ -36,25 +29,32 @@ flut:
   Z:
     points: 101
   Y:
-    method: linspace
-    values:
-      - 0
-      - 1
-      - 2
+    method: list
+    values: [1]
+    #method: linspace
+    #values:
+    #  - 0
+    #  - 1
+    #  - 31
   chist:
-    method: list
-    values:
-      - 0.1
-      - 1
-      - 100
-  Hnorm_negative:
-    method: list
-    values: [-1, -0.5]
-    z_min: 0.1
+    #method: list
+    #values: [1e3]
+    method: logspace
+    values: [-1.0, 1.0, 11]
 
+  Hnorm:
+    positive:
+        points: 2
+        # points: 3
+    negative:
+        method: list
+        #values: [-2, -1.5, -1.0, -0.5]
+        values: []
+    Z: 0.2
 # ulf settings
 # additional settings can be modified directly from the reference ulf file:
 # "basename".ulf
 ulf:
-  solver: /opt/ulf/ulf
+  solver: /shared_home/vascella/Codes/ulf/build_git2/ulf.x
   basename: flamelet
+  format: "{:9.8f}"

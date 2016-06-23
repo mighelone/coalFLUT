@@ -27,7 +27,7 @@
 #define FUELVAL4 0.;
 #define FUELVAL5 0.;
 // mechanism
-#define MECHANISM ../../files/mechanism/drm22.xml;
+#define MECHANISM ch4_smooke;
 #define GASID gas;
 #define TRANSPORT Mix;
 // properties
@@ -43,5 +43,7 @@
 // restart
 #define RESTART NO;
 #define RESTARTFILE res_restart.ulf;
+#define ZMAX 0;
+#define DHMAX 0;
 // include template file
 #include flamelet_template.ulf;
