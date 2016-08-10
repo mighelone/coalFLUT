@@ -1,0 +1,191 @@
+\documentclass[]{scrartcl}
+
+\usepackage[version=4]{mhchem}
+\usepackage{url}
+
+%opening
+\title{Flamelet look-up table for coal combustion}
+\author{Michele Vascellari}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Introduction}
+Flamelet Look-Up Tables (FLUT) for coal combustion can be generated using 1D Steady Laminar Diffusion Flamelet (SLDF) solver in \textbf{Universal Laminar Flamelet} (ULF).
+Two mixture fraction are defined $Z_v$ and $Z_c$, respectively for volatile and char gases.
+
+\section{Char-gas composition}
+\label{sec:char-gas-composition}
+
+Composition of char gas is obtained in a similar way to \url{http://www.sciencedirect.com/science/article/pii/S1540748914003757}, assuming that \ce{O2} is completely consumed on the particle surface:
+
+\begin{equation}
+\ce{C + 1/2 (O2 + \sum_j \frac{X_j}{X_{O2}} SP_j) -> CO + 1/2 \sum_j \frac{X_j}{X_{O2}} SP_j}
+\end{equation}
+
+\subsection{Char mixture fraction}
+Char mixture fraction $Z_c$ is defined as follows:
+\begin{eqnarray}
+Z_c = \frac{m_c}{m_c+m_v+m_o}
+\end{eqnarray}
+During char combustion the fuel is given by the products of char surface combustion $m_p = m_c + m_{o,c}$, where the oxidant consumed is:
+\begin{eqnarray}
+\alpha_c = \frac{m_{o,c}}{m_c} = \frac{1}{2 M_c} \left[ M_{O2} + \sum_i \frac{X_i}{X_{O_2}M_i} \right]
+\end{eqnarray}
+
+An additional mixture fraction $Z^*$ is defined in order to be one on the particle surface ($Z^*=1$) and zero on the oxidizer ($Z^*=0$):
+\begin{eqnarray}
+Z^* = \frac{m_p}{m_p+m_o} = \frac{m_c (1+\alpha_c)}{m_c (1+\alpha_c) + m_o}
+\end{eqnarray}
+
+
+The char mixture fraction on the particle surface is:
+\begin{eqnarray}
+Z_{c}^s = \frac{m_c}{m_c+m_{o,c}} = \frac{m_c}{m_c (1+\alpha_c)} = \frac{1}{1+\alpha_c}
+\end{eqnarray}
+
+The correlation between $Z^*$ and $Z_c$ is given by:
+\begin{eqnarray}
+Z^* = Z_c (1+\alpha_c)
+\end{eqnarray}
+
+\subsection{Char+volatiles}
+If also volatiles are released, the fraction of volatiles in the fuel is introduced:
+\begin{eqnarray}
+Y=\frac{m_v}{m_c+m_v} = \frac{Z_v}{Z_c+Z_v} 
+\end{eqnarray}
+
+Now the fuel is a combination of char and volatile gases:
+\begin{eqnarray}
+m_F = m_v + m_p = m_v + m_c(1+\alpha_c)
+\end{eqnarray}
+
+Similarly to the case with only char, the fuel mixture fraction $Z=Z_v+Z_c$ on the particle surface is:
+\begin{eqnarray}
+Z^s = \frac{m_v + m_c}{m_v + m_c + m_{o,c}} = \frac{m_v + m_c}{m_v + m_c(1+\alpha_c)} = \frac{1}{Y+(1-Y)(1+\alpha_c)}
+\end{eqnarray}
+
+And the fuel additional mixture fraction $Z^*$ is related to $Z$ with:
+\begin{eqnarray}
+Z^* = Z \left[Y+(1-Y)(1+\alpha_C)\right]
+\end{eqnarray}
+
+\section{Tabulation strategies}
+Since the sum of $Z_1+Z_2 \le 1$, it is convenient to use another couple of variables (see Hasse ph.D thesis):
+\begin{eqnarray}
+Z = & Z_v + Z_c\\
+Y = & \frac{Z_v}{Z_v + Z_c} = \frac{Z_v}{Z}
+\end{eqnarray}
+where $Z$ is the sum of fuels and $Y$ is the fraction of volatiles in the fuel. 
+
+However, $Z$ is not defined between 0 and 1 and therefore it is convenient to use $Z*$ for generating the tables, since it is always defined between 0 and 1.
+\begin{eqnarray}
+Z^* = Z \left[Y+(1-Y)(1+\alpha_C)\right]
+\end{eqnarray}
+
+Both variables ($Y$ and $Z^*$) are now defined between 0 and 1, and they can be easily calculated from $Z_v$ and $Z_c$ transported in a CFD solution.
+
+Steady Laminar Diffusion Flamelets (SLDF) can be solved for different values of $Y$, obtaining a solution between $Z^*=0$ (pure oxidizer) and $Z^*=1$ (pure mixture of volatile and char product gases).
+
+Hence, solving for different values of $Y$ we can entirely map the mixture fraction space $Z_1$ and $Z_2$.
+
+\subsection{Definition of fuel composition}
+The char gas composition is:
+\begin{eqnarray}
+Y_{c,O2} =& 0\\
+Y_{c,CO} = & \frac{M_{CO}}{m_{tot}} [1+\frac{1}{2}\frac{X_{CO}}{X_{O_2}}]\\
+Y_{c,j} = & \frac{M_j}{2 m_{tot}} \frac{ X_{j}}{X_{O_2}}
+\end{eqnarray}
+with:
+\begin{eqnarray}
+m_{tot} = M_{CO}+\frac{1}{2}\sum_j\frac{X_{j}M_j}{X_{O_2}}
+\end{eqnarray}
+
+For a given value of $Y$, the composition of fuel $Y_{F,i}$ at ($Z^*=1$) can be calculated from mixing:
+\begin{eqnarray}
+Y_{F, i} = \frac{m_v Y_{v, i}+ (1+\alpha_c) m_c Y_{c, i}}{m_v + m_c + m_{o,c}} = \frac{Y Y_{v, i} + (1-Y)(1+\alpha_c)Y_{c, i}}{Y + (1-Y)(1+\alpha_c)}
+\end{eqnarray}
+where:
+\begin{itemize}
+\item $Y_{v, i}$ is the composition of the volatile gases, defined according to the devolatilization model
+\end{itemize}
+
+Similarly the total enthalpy of the fuel is given by:
+\begin{eqnarray}
+H_F = \frac{m_v H_v+ (1+\alpha_c) m_c H_c}{m_v + m_c(1+\alpha_c)} = \frac{Y H_v + (1-Y)(1+\alpha_c)H_c}{Y + (1-Y)(1+\alpha_c)}
+\end{eqnarray}
+
+Note that $Y_{F,i}$ and $H_F$ do not change linearly, it may be better to use another definition of Y, for example $Y=m_v/(m_v + m_p)$.
+
+\subsection{Progress variable}
+For each $Y$ different values of the stoichiometric scalar dissipation rate $\chi_{st}$ are evaluated in order to map the evolution of the diffusion flame from the quenched solution (high values of $\chi_{st}$) to the equilibrium (high values of $\chi_{st}$).
+
+The solutions are finally mapped into progress variable space, defined as a weighted sum of species mass fraction:
+\begin{eqnarray}
+y_c = \sum_i \alpha_i Y_i
+\end{eqnarray}
+
+\subsection{Enthalpy levels}
+The different levels of enthalpy can be treaded considering different values of the fuel temperature or enthalpy.
+It is convenient to use a normalized value of the fuel total enthalpy for tabulating the data:
+\begin{eqnarray}
+H_n(Y) = \frac{H_F(Y) - H_F^{min}(Y)}{H_F^{max}(Y) - H_F^{min}(Y)}
+\end{eqnarray}
+where $H_F(Y)$ is the fuel total enthalpy (at $Z=1$) for a given mixture $Y$, while $H_F^{min}(Y)$ and $H_F^{max}(Y)$ are the minimum and maximum fuel total enthalpy, corresponding to $H_n=0$ and $H_n=1$ for the given $Y$, respectively.
+
+In fact, knowing $Z_1$ and $Z_2$ (or $Z$ and $Y$) and the total enthalpy it is possible to obtain the normalized enthalpy level on the fuel side:
+\begin{eqnarray}
+H = Z^*\cdot H_F(Y) + (1-Z^*) H_O
+\end{eqnarray}
+
+\section{Table generation}
+Finally table can be generated varying the following parameters:
+\begin{itemize}
+\item $Y$ fraction of volatiles in the fuel
+\item $\chi_{st}$ scalar dissipation rate in stoichiometric conditions
+\item $H_n$ fuel normalized total enthalpy
+\end{itemize}
+Progress variable will be calculated going from quenched to equilibrium solutions, varying $\chi_{st}$ from higher to lower values.
+
+In order to store the progress variable in the look-up table, its non-dimensional form is used:
+\begin{eqnarray}
+c = \frac{y_c - y_{c, min}}{y_{c, max} - y_{c, min}}
+\end{eqnarray}
+where $y_{c, min}$ and $ y_{c, max}$ are function of $Z$, $Y$ and $H_F$.
+
+\section{Coupling of the look-up table with CFD}
+From the CFD solution the following values can be obtained:
+\begin{itemize}
+\item $Z_v$
+\item $Z_c$
+\item $H$
+\item $y_c$
+\end{itemize}
+
+The following steps should be done:
+\begin{enumerate}
+\item Calculate 
+$Z=Z_v+Z_c$ and $Y=Z_v/Z$
+\item Calculate $Z^* =Z \left[Y+(1-Y)(1+\alpha_C)\right]$
+\item Calculate the minimum and maximum total enthalpy of the oxidizer $H_{o,min}$, $H_{o,max}$. 
+\item Calculate the minimum and maximum total enthalpy of chargas: $H_{c,min}$, $H_{c,max}$
+\item Calculate the minimum and maximum total enthalpy of volatiles: $H_{v,min}$, $H_{v,max}$. Step 2-5 can be done only one time and the values can be stored.
+\item Calculate minimum and maximum enthalpies for the given $Y$:\\ $H_{F,min} = \frac{y H_{v,min}+(1-Y)(1+\alpha_c)H_{c,min}}{y + (1-Y)(1+\alpha_c)}$, $H_{F,min} = \frac{y H_{v,max}+(1-Y)(1+\alpha_c)H_{c,max}}{y + (1-Y)(1+\alpha_c)}$
+\item  Calculate the minimum and maximum enthalpies for the given $Z^*$: $H_{min} = Z^* H_{F,min}+(1-Z^*)H_{o,min}$, $H_{max} = Z^* H_{F,max}+(1-Z^*)H_{o,max}$
+\item Calculate the normalized total enthalpy: $h_n = \frac{H - H_{min}}{H_{max}-H_{min}}$
+\item Look-up $y_{c, min}$ and $ y_{c, max}$ from the table, using $h_n$, $Z^*$ and $Y$ (an arbitrary values of $c$ can be used, i.e. $c=0$)
+\item Calculate $c = \frac{y_c - y_{c,min}}{y_{c,max}-y_{c,min}}$
+\item Look-up table with correct $c$ value.
+\item Get values required from CFD: $\rho$, $\mu$, $\lambda$, $D$, etc.
+
+\end{enumerate}
+
+It is important to define a method for managing when input data are outside of the range of definition.
+In particular, it may be possible that $c$ becomes higher than 1.In some cases a limiter can be necessary.
+\end{document}
+

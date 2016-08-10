@@ -1,0 +1,5 @@
+*.aux
+coalFLUT.pdf
+*.synctex.gz
+*.fdb_latexmk
+*.fls
