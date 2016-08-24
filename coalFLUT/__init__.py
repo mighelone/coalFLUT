@@ -3,6 +3,7 @@ coalFLUT
 ========
 """
 import pyFLUT.ulf as ulf
+import pyFLUT.ulf.dflut
 import yaml
 import cantera
 import numpy as np
@@ -10,8 +11,52 @@ import shutil
 import os
 import glob
 import multiprocessing as mp
-import pyFLUT.ulf.equilibrium as equilibrium
+import pyFLUT.equilibrium as equilibrium
 from termcolor import colored
+
+
+# New implementation #
+
+class CoalFLUTnew(pyFLUT.ulf.dflut.DFLUT_2stream):
+    streams = ['volatiles', 'oxidizer']
+
+    def mix_strems(self, Y):
+        pass
+
+    def set_chargas(self):
+        """
+        Define the char gas composition
+        """
+        def mw(sp):
+            return self.gas.molecular_weights[self.gas.species_index(sp)]
+
+        Yc = {}
+        mc = self.gas.atomic_weight('C')
+        mass = mw('CO')
+        alphac = mw('O2')
+        X_ox = self.oxidizer['X']
+        x_o2 = X_ox['O2']
+        for sp, x in X_ox.iteritems():
+            if not sp == 'O2':
+                prod = x / x_o2 * mw(sp)
+                mass += 0.5 * prod
+                alphac += prod
+        alphac *= 0.5 / mc
+        self.alphac = alphac
+        for sp, x in X_ox.iteritems():
+            if sp == 'O2':
+                Yc['O2'] = 0
+            else:
+                Yc[sp] = 0.5 * mw(sp) * x / x_o2 / mass
+
+        Yc['CO'] = (
+            mw('CO') * (1. + 0.5 * X_ox.get('CO', 0) / x_o2)) / mass
+        chargases = {}
+        chargases['Y'] = Yc
+        chargases['T'] = self.volatiles['T'].copy()
+        self.chargases = pyFLUT.utilities.fix_composition_T(
+            chargases, self.gas)
+
 
 T_limit = 200
 
@@ -43,10 +88,10 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     """
     ulf_format = ulf_settings.get('format', '{:5.4f}')
     ulf_basename = ulf_settings['basename'] + '_' + \
-        "_".join([var+ulf_format.format(eval(var))
-                 for var in ['Hnorm', 'Y', 'chist']])
+        "_".join([var + ulf_format.format(eval(var))
+                  for var in ['Hnorm', 'Y', 'chist']])
     ulf_result = ulf_basename + ".ulf"
-    ulf_basename_run = ulf_basename+"run"
+    ulf_basename_run = ulf_basename + "run"
     ulf_input = ulf_basename_run + ".ulf"
     shutil.copy(ulf_settings['basename'] + ".ulf", ulf_input)
     runner = ulf.UlfRun(ulf_input, ulf_settings["solver"])
@@ -58,7 +103,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     # dumb fuel and oxidizer temperature equilibrium necessary only
     # for the stoichiomtric conditions
     eq = equilibrium.EquilibriumSolution(fuel=fuel, oxidizer=ox,
-                                         mechanism=runner['MECHANISM']+'.xml')
+                                         mechanism=runner['MECHANISM'] + '.xml')
     runner.set('ZST', eq.z_stoich())
 
     list_of_species = list(set(ox['Y'].keys() + fuel['Y'].keys()))
@@ -72,9 +117,9 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     if Hnorm > 0:
         DH_max = 0
     else:
-        H_1 = z_DHmin * fuel['H'].max() + (1-z_DHmin) * ox['H'].max()
-        H_0 = z_DHmin * fuel['H'].min() + (1-z_DHmin) * ox['H'].min()
-        DH_max = -Hnorm*(H_1 - H_0)
+        H_1 = z_DHmin * fuel['H'].max() + (1 - z_DHmin) * ox['H'].max()
+        H_0 = z_DHmin * fuel['H'].min() + (1 - z_DHmin) * ox['H'].min()
+        DH_max = -Hnorm * (H_1 - H_0)
     runner.set('DHMAX', DH_max)
 
     # Hf = fuel['H'].min() + Hnorm * (fuel['H'].max() - fuel['H'].min())
@@ -88,7 +133,7 @@ def runUlf(ulf_settings, Y, chist, Hnorm, fuel, ox, z_DHmin):
     try:
         print("Run {}".format(ulf_basename))
         results = runner.run()
-        shutil.copy(ulf_basename_run+'final.ulf', ulf_result)
+        shutil.copy(ulf_basename_run + 'final.ulf', ulf_result)
         print(colored("End run {}".format(ulf_basename), 'green'))
     except:
         print(colored("Error running {}".format(ulf_basename), 'red'))
@@ -196,7 +241,8 @@ def read_dict_list(**kwargs):
 
 def normalize(x):
     sumx = sum(x.values())
-    return {sp: xi/sumx for sp, xi in x.items()}
+    return {sp: xi / sumx for sp, xi in x.items()}
+
 
 def fix_composition(stream, gas):
     """
@@ -223,8 +269,8 @@ def fix_composition(stream, gas):
     return stream_fixed
 
 
-
 class coalFLUT(ulf.UlfDataSeries):
+
     def __init__(self, input_yaml):
         with open(input_yaml, "r") as f:
             inp = yaml.load(f)
@@ -259,9 +305,9 @@ class coalFLUT(ulf.UlfDataSeries):
         # if not use volatiles as refence number
         # if len(self.oxidizer['T']) != n_H:
         #     self.oxidizer['T'] = np.linspace(self.oxidizer['T'].min(),
-        #                                     self.oxidizer['T'].max(), n_H)
+        # self.oxidizer['T'].max(), n_H)
         self.ulf_settings = inp['ulf']
-        runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf",
+        runner = ulf.UlfRun(self.ulf_settings['basename'] + ".ulf",
                             self.ulf_settings['solver'])
         pressure = float(runner['PRESSURE'])
         self.chargas = self._define_chargas()
@@ -271,7 +317,8 @@ class coalFLUT(ulf.UlfDataSeries):
         # Hnorm = 0 corresponds to Tf min
         # Hnorm = 1 corresponds to Tf max
         Hnorm = np.linspace(0, 1, n_H)
-        Hnorm_negative = read_dict_list(**inp['flut']['Hnorm']['negative'])
+        Hnorm_negative = read_dict_list(
+            **inp['flut']['Hnorm']['negative'])
         self.z_DHmin = inp['flut']['Hnorm']['Z']
         self.Hnorm = np.concatenate([Hnorm_negative, Hnorm])
 
@@ -305,9 +352,9 @@ class coalFLUT(ulf.UlfDataSeries):
             mixed fuel dictionary
         """
         onealphac = 1 + self.chargas['alphac']
-        den = Y + (1-Y) * onealphac
-        alpha_v, alpha_c = Y / den, (1-Y)*onealphac
-        yf = {sp: (alpha_v*self.volatiles['Y'].get(sp, 0) + alpha_c *
+        den = Y + (1 - Y) * onealphac
+        alpha_v, alpha_c = Y / den, (1 - Y) * onealphac
+        yf = {sp: (alpha_v * self.volatiles['Y'].get(sp, 0) + alpha_c *
                    self.chargas['Y'].get(sp, 0)) for sp in
               list(set(self.chargas['Y'].keys() + self.volatiles['Y'].keys()))}
         Hf = alpha_v * self.volatiles['H'] + alpha_c * self.chargas['H']
@@ -322,7 +369,7 @@ class coalFLUT(ulf.UlfDataSeries):
         x_o2 = self.oxidizer['X']['O2']
         for sp, x in self.oxidizer['X'].items():
             if not sp == 'O2':
-                prod = x/x_o2 * mw[self.gas.species_index(sp)]
+                prod = x / x_o2 * mw[self.gas.species_index(sp)]
                 mass += 0.5 * prod
                 alphac += prod
         alphac *= 0.5 / mc
@@ -331,14 +378,14 @@ class coalFLUT(ulf.UlfDataSeries):
             if sp == 'O2':
                 Yc['O2'] = 0
             else:
-                Yc[sp] = 0.5 * mw[index] * x/x_o2/mass
+                Yc[sp] = 0.5 * mw[index] * x / x_o2 / mass
         Yc['CO'] = (mw[self.gas.species_index('CO')] *
-                    (1 + 0.5 * self.oxidizer['X'].get('CO', 0)/x_o2))/mass
+                    (1 + 0.5 * self.oxidizer['X'].get('CO', 0) / x_o2)) / mass
         return {'Y': Yc, 'alphac': alphac}
 
     def run(self, n_p=1):
         # define here common settings to all cases
-        runner = ulf.UlfRun(self.ulf_settings['basename']+".ulf",
+        runner = ulf.UlfRun(self.ulf_settings['basename'] + ".ulf",
                             self.ulf_settings['solver'])
         runner.set('MECHANISM', self.mechanism[:-4])
         runner.set('AXISLENGHTREFINED', self.z_points)
@@ -358,7 +405,8 @@ class coalFLUT(ulf.UlfDataSeries):
                               self.oxidizer, self.z_DHmin)
                        for Hnorm in self.Hnorm
                        for Y in self.Y for chist in self.chist]
-        super(coalFLUT, self).__init__(input_data=results, key_variable='Z')
+        super(coalFLUT, self).__init__(
+            input_data=results, key_variable='Z')
         # cleanup results from None
         # results = [res for res in results if res]
         # ulf_res = []
@@ -381,8 +429,8 @@ class coalFLUT(ulf.UlfDataSeries):
 
         def add_levels(stream, h_levels):
             return np.insert(stream['H'], 0, (stream['H'].min() +
-                                              h_levels*(stream['H'].max() -
-                                                        stream['H'].min())))
+                                              h_levels * (stream['H'].max() -
+                                                          stream['H'].min())))
         if isinstance(h_levels, float):
             h_levels = np.array([h_levels])
         elif isinstance(h_levels, list):
@@ -417,10 +465,10 @@ class coalFLUT(ulf.UlfDataSeries):
             y = np.take(datai, i_species)
             Z = np.take(datai, i_Z)
             Y = np.take(datai, i_Y)
-            oneY_onealphac = (1-Y)*(1+self.chargas['alphac'])
+            oneY_onealphac = (1 - Y) * (1 + self.chargas['alphac'])
             Hf = (Y * self.volatiles['H'][:n_l] + oneY_onealphac *
-                  self.chargas['H'][:n_l])/(Y + oneY_onealphac)
-            H = Z * Hf + (1-Z)*self.oxidizer['H'][:n_l]
+                  self.chargas['H'][:n_l]) / (Y + oneY_onealphac)
+            H = Z * Hf + (1 - Z) * self.oxidizer['H'][:n_l]
 
             for i_H, Hi in enumerate(H):
                 self.gas.HPY = Hi, pressure, y
@@ -438,7 +486,8 @@ class coalFLUT(ulf.UlfDataSeries):
                             if T > T_limit else 0
                     elif 'reactionRate_' in var:
                         if T > T_limit:
-                            sp_index = self.gas.species_index(var.split('_')[1])
+                            sp_index = self.gas.species_index(
+                                var.split('_')[1])
                             value = self.gas.net_production_rates[sp_index] / \
                                 self.gas.density
                         else:

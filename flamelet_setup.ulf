@@ -1,0 +1,115 @@
+// --------------------------------------------------------------------
+// 
+// general ULF flamelet setup
+// 
+// --------------------------------------------------------------------
+// --------------------------------------------------------------------
+// mechanism
+// --------------------------------------------------------------------
+// main mixture [ generalMix | compositeMix ]
+#define MAIN_MIXTURE generalMix;
+#define MIXTURE_TYPE CANTERA_MIXTURE;
+#define MECHANISM ch4_smooke;
+// ...when using compositeMix as main mixture
+#define CHEMISTRY_LIB ulfChemistry;
+#define TRANSPORT_LIB egTransport;
+#define TRANSPORT_TYPE Mix;
+// --------------------------------------------------------------------
+// pressure
+// --------------------------------------------------------------------
+#define PRESSURE 101325;
+// --------------------------------------------------------------------
+// flamelet model
+// 
+// available models:
+// [T|Yi]_flameletLe1
+// [T|Yi]_flameletLeVar
+// [T|Yi]_flameletLeVarCurv
+// 
+// ... append flamelet equation name by HMF if
+// ZMin and ZMax != 0 or 1 respectively
+// --------------------------------------------------------------------
+#define T_EQN T_flameletLe1;
+#define Y_EQN Yi_flameletLe1;
+#define UPDATE_EQN update_flameletLeVar;
+// ...set Le update type accordingly!
+#define LEWIS_UPDATE_TYPE standard;
+// ...set to standard when computing with thermo diffusion (Soret)
+#define DTHERM_UPDATE_TYPE constant;
+// --------------------------------------------------------------------
+// startprofile
+// ... "equilibrium" or "burkeSchumann"
+// --------------------------------------------------------------------
+#define STARTPROFILE equilibrium;
+// --------------------------------------------------------------------
+// boundary conditions
+// --------------------------------------------------------------------
+// Z values at boundary
+#define ZMIN 0.0;
+#define ZMAX 1.0;
+// definition of scalar dissipation rate
+// ... erfc profile
+#define CHI_FROM_ERFC chi;
+#define ZST 0.0551660728268;
+#define CHIST 1.0;
+// ... read from file
+#define CHI_FROM_FILE off;
+#define CHI_FILE flamelet_chi.ulf;
+// mesh refinement options (improved starting mesh)
+// > activate initialMeshAdaption in flamelet_template.ulf
+// > mesh is usually refined around Zst (approximate REFINE_POSITION)
+// > width should correspond to approximate reaction zone width in Z-space
+#define REFINE_POSITION 0.055;
+#define REFINE_WIDTH 0.15;
+// temperatures
+#define T_OXID 300;
+#define T_FUEL 300;
+// species
+#define SPEC1 N2;
+#define SPEC2 CH4;
+#define SPEC3 O2;
+#define SPEC4 H2O;
+#define SPEC5 H2O2;
+#define SPEC6 CO2;
+#define Y1_FUEL 0;
+#define Y2_FUEL 1;
+#define Y3_FUEL 0;
+#define Y4_FUEL 0;
+#define Y5_FUEL 0;
+#define Y6_FUEL 0;
+#define Y1_OXID 0.767082998774;
+#define Y2_OXID 0;
+#define Y3_OXID 0.232917001226;
+#define Y4_OXID 0;
+#define Y5_OXID 0;
+#define Y6_OXID 0;
+// --------------------------------------------------------------------
+// solver
+// --------------------------------------------------------------------
+// DAE solvers
+#define SOLVER_TYPE ulfNewton;
+#define BOUNDARY_EQN fixedValue_newton;
+#define BOUNDARY_TYPE algebraic;
+// ODEsolvers
+// options
+#define ABS_TOL 1e-9;
+#define REL_TOL 1e-7;
+// --------------------------------------------------------------------
+// result and restart options
+// --------------------------------------------------------------------
+#define RESULT_BASENAME flamelet_ct_Mix_ch4_gri30_113_;
+#define RESTART_OPTION NO;
+#define RESTART_FILE flamelet_final.ulf;
+// --------------------------------------------------------------------
+// mesh
+// --------------------------------------------------------------------
+#define AXIS_LENGTH 30;
+#define REFINE_TARGET 101;
+#define REFINE_ADD_POINT 10;
+// --------------------------------------------------------------------
+// integration time
+// --------------------------------------------------------------------
+#define END_TIME 10.0;
+// --------------------------------------------------------------------
+// --------------------------------------------------------------------
+#include flamelet_template.ulf;

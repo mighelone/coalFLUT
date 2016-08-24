@@ -59,6 +59,7 @@ flut:
 
   variables:
     ['rho', 'T']
+  solver: OpenFOAM
     
 ulf:
   # solver: /shared_home/vascella/Codes/ulf/build_git2/ulf.x

@@ -1,135 +1,168 @@
 runTime
 {
-	startTime		  STARTTIME;
-	endTime			  ENDTIME;
-	writeInterval	  WRITEINTERVAL;
-	timePrecision	  2;
+    startTime		  0.0;
+    endTime			  END_TIME;
+    writeInterval	  END_TIME; // modify, when transient solution is of interest
+    timePrecision	  1;
 }
 
 solution
 {
-	requiredFields ( chi );
-	solutionEntries
-	{
-		T
-		{
-			eqID        T_flameletLe1;
+    requiredFields( chi, LeZ, Ysum);
+    additionalUpdateFunction
+    {
+        eqID UPDATE_EQN;
+    }
+    solutionEntries
+    {
+        T
+        {
+            eqID        T_EQN;
             eqType      ode;
-			minValue    0.0;
-			maxValue    3000.0;
-			boundaryConditions 
-			{
-				TempOxidizer
-				{
-					patchList ( oxidizer );
-					eqID    fixedValue_newton; 
-                    eqType  algebraic;
-					eqParameters 
-					{
-						value TOXIDIZER;
-					}
-				}
-				TempFuel
-				{
-					patchList ( fuel );
-					eqID    fixedValue_newton; 
-                    eqType  algebraic;
-					eqParameters 
-					{
-						value TFUEL;
-					}
-				}
-			}
-		}
-		Yi
-		{
-			eqID        Yi_flameletLe1;
+            eqParameters 
+            {
+                // only relevant for flamelet models ...HMF
+                ZMin ZMIN;
+                ZMax ZMAX;
+            }
+            minValue    250.0;
+            maxValue    3000.0;
+            boundaryConditions 
+            {
+                T_oxid_bc
+                {
+                    patchList (oxidizer);
+                    eqID    BOUNDARY_EQN;
+                    eqType  BOUNDARY_TYPE;
+                    eqParameters // only relevant for fixedValue_newton
+                    {
+                        value T_OXID;
+                    }
+                }
+                T_fuel_bc
+                {
+                    patchList (fuel);
+                    eqID    BOUNDARY_EQN;
+                    eqType  BOUNDARY_TYPE;
+                    eqParameters // only relevant for fixedValue_newton
+                    {
+                        value T_FUEL;
+                    }
+                }
+            }
+        }
+        Yi
+        {
+            eqID        Y_EQN;
             eqType      ode;
-			minValue    0.0;
-			maxValue    1.0;
-			boundaryConditions 
-			{
-				oxidBC
-				{
-					patchList ( oxidizer );
-					eqID    fixedValue_newton; 
-                    eqType  algebraic;
-					eqParameters 
-					{
-						value
-						{
-							default 0.0; 
-							SPECIES0 OXIVAL0;
-							SPECIES1 OXIVAL1;
-							SPECIES2 OXIVAL2;
-							SPECIES3 OXIVAL3;
-							SPECIES4 OXIVAL4;
-							SPECIES5 OXIVAL5;
-							SPECIES6 OXIVAL6;
-						}
-					}
-				}
-				fuelBC
-				{
-					patchList ( fuel );
-					eqID    fixedValue_newton; 
-                    eqType  algebraic;
-					eqParameters 
-					{
-						value
-						{
-							default 0.0;
-							SPECIES0 FUELVAL0;
-							SPECIES1 FUELVAL1;
-							SPECIES2 FUELVAL2;
-							SPECIES3 FUELVAL3;
-							SPECIES4 FUELVAL4;
-							SPECIES5 FUELVAL5;
-							SPECIES6 FUELVAL6;
-						}
-					}
-				}
-			}
-		}
-	}
+            eqParameters 
+            {
+                // only relevant for flamelet models ...HMF
+                ZMin ZMIN;
+                ZMax ZMAX;
+            }
+            minValue    0.0;
+            maxValue    1.0;
+            boundaryConditions 
+            {
+                Y_oxid_bc
+                {
+                    patchList (oxidizer);
+                    eqID    BOUNDARY_EQN;
+                    eqType  BOUNDARY_TYPE;
+                    eqParameters // only relevant for fixedValue_newton
+                    {
+                        value
+                        {
+                            default 0.0;   
+                            SPEC1   Y1_OXID; 
+                            SPEC2   Y2_OXID;
+                            SPEC3   Y3_OXID;
+                            SPEC4   Y4_OXID;
+                            SPEC5   Y5_OXID;
+                            SPEC6   Y6_OXID;
+                        }
+                    }
+                }
+                Y_fuel_bc
+                {
+                    patchList (fuel);
+                    eqID    BOUNDARY_EQN;
+                    eqType  BOUNDARY_TYPE;
+                    eqParameters // only relevant for fixedValue_newton
+                    {
+                        value
+                        {
+                            default 0.0;   
+                            SPEC1   Y1_FUEL; 
+                            SPEC2   Y2_FUEL;
+                            SPEC3   Y3_FUEL;
+                            SPEC4   Y4_FUEL;
+                            SPEC5   Y5_FUEL;
+                            SPEC6   Y6_FUEL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+preProcessing
+{
+    eqID        flamelet_startprofile;
+	mixtureType CANTERA_MIXTURE;
+    mechanism   MECHANISM;
+    pressure    PRESSURE;
+    profileType STARTPROFILE;
+    fuel
+    {
+        T       T_FUEL;
+        SPEC1   Y1_FUEL; 
+        SPEC2   Y2_FUEL;
+        SPEC3   Y3_FUEL;
+        SPEC4   Y4_FUEL;
+        SPEC5   Y5_FUEL;
+        SPEC6   Y6_FUEL;
+    }
+    oxidizer
+    {
+        T       T_OXID;
+        SPEC1   Y1_OXID; 
+        SPEC2   Y2_OXID;
+        SPEC3   Y3_OXID;
+        SPEC4   Y4_OXID;
+        SPEC5   Y5_OXID;
+        SPEC6   Y6_OXID;
+    }
 }
 
 solver
 {
-	solverType ulfNewton;
-	absTol 1e-7;
-	relTol 1e-5;
-	maxSteps 100000;
-	maxOrder 8;
+    solverType SOLVER_TYPE;
+    absTol ABS_TOL;
+    relTol REL_TOL;
+    maxSteps 1000000;
+    maxOrder 5;
     maxJacStationaryAge 10;
-    maxJacTransientAge 20;
+    maxJacTransientAge 10;
+    //jacobianType band; // [blockTriDiagonal (def) | band] 
+    convergenceCriterion maxBased; // [averageBased (def) | maxBased | local]
     nTimeSteps 10;
     dtMax 1.0e-1;
-    dtMin 1.0e-8;
+    dtMin 1.0e-12;
     maxDampSteps 6;
     dampFactor 2.0;
-    logLevel 3;
-	//absTol 1e-9;
-	//relTol 1e-6;
-	//maxSteps 100000;
-	//maxOrder 8;
-    //maxJacStationaryAge 10;
-    //maxJacTransientAge 20;
-    //nTimeSteps 40;
-    //dtMax 1.0e-4;
-    //dtMin 1.0e-8;
-    //maxDampSteps 6;
-    //dampFactor 2.0;
-    //logLevel 2;
+    logLevel 1;
 }
 
-libs( "libequations.so" );
+libs( "libequations" );
 
-resultFileBaseName BASENAME;
+resultFileBaseName RESULT_BASENAME;
 resultType ASCII;
 
-restart RESTART;
-restartFile RESTARTFILE;
+restart RESTART_OPTION;
+restartFile RESTART_FILE;
 restartType ASCII;
 
 mesh
@@ -137,66 +170,73 @@ mesh
 	dimensions 1;
 	constructionFrom cartesianLimits;
 	axisNames( Z );
-	axisLength( AXISLENGTH );
+	axisLength( AXIS_LENGTH );
 	cartesianMin( 0 );
 	cartesianMax( 1 );
-    meshAdaption
-	{
-        eqID oldRemeshing;
-		Z
-		{
-            eqID equidistantAxis;
-			referenceField T;
-			additionalPoints 10;
-            refinementTarget AXISLENGHTREFINED;
-		}
-	}
-	patches
-	{
-		oxidizer
-		{
-			patchMin ( 0 );
-			patchMax ( 0 );
-		}
-		fuel
-		{
-			patchMin ( 1 );
-			patchMax ( 1 );
+    patches
+    {
+        oxidizer
+        {
+            patchMin ( 0 );
+            patchMax ( 0 );
+        }
+        fuel
+        {
+            patchMin ( 1 );
+            patchMax ( 1 );
 			patchNormal( -1 );
-		}
-	}
+        }
+    }
+    //initialMeshAdaption
+    //{
+    //    eqID remeshing;
+    //    Z
+    //    {
+    //        weights
+    //        {
+    //            eqID flameletWeight;
+    //            eqParameters
+    //            {
+    //                Zst REFINE_POSITION;
+    //                width REFINE_WIDTH;
+    //            }
+    //        }
+    //        reMesh
+    //        {
+    //            eqID redistribute;
+    //        }
+    //        additionalPoints 0;
+    //    }
+    //}
+	meshAdaption 
+    {
+        eqID remeshing;
+        Z
+        {
+            weights
+            {
+                eqID refineWeightSolution;
+                reMeshRatio 0.9;
+            }
+            reMesh
+            {
+                eqID refine;
+            }
+		    additionalPoints REFINE_ADD_POINT;
+			refinementTarget REFINE_TARGET;
+        }
+    }
 }
 
 mixture
 {
-    mainMixture   theMixture;
-    theMixture
+    mainMixture MAIN_MIXTURE;
+    generalMix
     {
-        mixtureType       CANTERA_MIXTURE;
-        //mechanism       gri30.xml;
-        //gasId           gri30_mix;
-        //mechanism       ch4_smooke.xml;
+        mixtureType     MIXTURE_TYPE;
         mechanism       MECHANISM;
-        gasId           GASID;
-        transportType   TRANSPORT;
-        //fluidType       dcs;
-        //mechanism       ch4_grimech;
-        //egFile          "EGlib/src/EGlib/ch4_grimech";
-        mixtureEntries
-        {
-            tdot
-            {
-                updateType standard;
-            }
-            reactionRate
-            {
-                updateType standard;
-            }
-            hMean
-            {
-                updateType standard;
-            }
-        }
+        // this is equivalent for all mixtures > case specific
+        #include        "flamelet_mixtureEntries.ulf"; 
     }
 }
 
@@ -211,21 +251,10 @@ fields
 		fixedValue 0.0;
 		firstOrder CDS;
 		secondOrder CDS;
-		diffusive CDS;
+		diffusive NONE;
 	}
-	YiDefault
-	{
-		fixedValue 0.0;
-		write YES;
-	}
-	reactionRateiDefault
-	{
-		write YES;
-	}
-	chi
-	{
-		//readFrom chi.ulf;
-		//readType ASCII;
+    CHI_FROM_ERFC
+    {
         eqID erfc_startProfile;
         eqParameters
         {
@@ -233,56 +262,55 @@ fields
             chiSt CHIST; 
         }
 		frozen YES;
-		write YES;
-		//fixedValue 0.0;
-	}
+        write YES;
+    }
+    CHI_FROM_FILE
+    {
+        readFrom CHI_FILE;
+        readType ASCII;
+		frozen YES;
+        write YES;
+    }
 	T
 	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
+		firstOrder UDS;
+        write YES;
+        fixedValue 300;
+	}
+    YiDefault
+    {
+		firstOrder UDS;
+        write YES;
+    }
+    reactionRateiDefault
+    {
+		firstOrder UDS;
+        write YES;
+    }
+    rho
+	{
+        write YES;
 	}
 	p
 	{
 		fixedValue PRESSURE;
-		write YES;
-	}
-	CH4
-	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
-	}
-	O2
-	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
-	}
-	CO2
-	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
-	}
-	H2O
-	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
-	}
-	N2
-	{
-		readFrom startProfiles.ulf;
-		readType ASCII;
-		write YES;
-	}
-	rho
-	{
-		write YES;
+        write YES;
 	}
 	hMean
 	{
-		write YES;
+        write YES;
 	}
+	LeZ
+	{
+        //write YES;
+        // default value 1.0, overwritten if LEWIS_UPDATE_TYPE set to standard
+        fixedValue 1.0; 
+	}
+	LeiDefault
+	{
+        //write YES;
+        // default value 1.0, overwritten if LEWIS_UPDATE_TYPE set to standard
+        fixedValue 1.0; 
+	}
+    //#include LEWIS_NUMBER_FILE;
 }
