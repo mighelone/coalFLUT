@@ -1,7 +1,5 @@
-#!/home/vascella/anaconda/bin/python
+#!/usr/bin/env python
 
-#import sys
-#sys.path.insert(0, '../')
 
 import argparse
 import coalFLUT
@@ -17,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', action="store", dest="out_file", type=str,
                         default="coalFLUT.h5", help="Output HFD5 file")
     argument = parser.parse_args()
-    #print parser.parse_args(['-n', '-o'])
+    # print parser.parse_args(['-n', '-o'])
     res = coalFLUT.coalFLUT(argument.input_yaml)
     res.run(n_p=argument.n_p)
     res.write_bin(argument.out_file)

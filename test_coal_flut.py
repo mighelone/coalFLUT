@@ -9,7 +9,13 @@ input_yml = 'input.yml'
 
 @pytest.fixture
 def flut():
-    return coalFLUT.CoalFLUTnew(input_yml)
+    return coalFLUT.CoalFLUT(input_yml)
+
+
+def mixing(p, v, alphac, Y):
+    alphac_one = 1 + alphac
+    return ((alphac_one * (1 - Y) * p + Y * v) /
+            (alphac_one * (1 - Y) + Y))
 
 
 def test_init(flut):
@@ -56,20 +62,19 @@ def test_mixfuel_Y(flut):
     Y = 0.5
     mix = flut.mix_streams(Y=Y)
     alphac = flut.alphac
-    alphac_one = 1 + alphac
-
-    def mixing(p, v):
-        return ((alphac_one * (1 - Y) * p + Y * v) /
-                (alphac_one * (1 - Y) + Y))
-
     chargases = flut.chargases
     volatiles = flut.volatiles
 
-    assert np.allclose(mix['H'], mixing(chargases['H'], volatiles['H']))
+    assert np.allclose(mix['H'],
+                       mixing(chargases['H'],
+                              volatiles['H'], alphac, Y))
 
     for sp in ('CH4', 'CO'):
         assert mix['Y'][sp] == mixing(
-            chargases['Y'].get(sp, 0), volatiles['Y'].get(sp, 0))
+            chargases['Y'].get(sp, 0),
+            volatiles['Y'].get(sp, 0),
+            alphac,
+            Y)
 
 
 def run(fuel, oxidizer, parameters, par_format, ulf_reference, solver,
@@ -77,10 +82,15 @@ def run(fuel, oxidizer, parameters, par_format, ulf_reference, solver,
     '''
     Mockup run function, returns a zero data structure
     '''
-    output_dict = ['Z', 'T', 'rho', 'CO', 'CO2']
-    ngrid = 101
+    output_dict = ['Z', 'T', 'rho', 'CO', 'CH4', 'O2', 'N2']
+    ngrid = 11
     data = np.zeros((ngrid, len(output_dict)))
     data[:, 0] = np.linspace(0, 1, ngrid)
+    n_sp = 3
+    for i, sp in enumerate(output_dict[n_sp:], n_sp):
+        data[:, i] = np.linspace(oxidizer['Y'].get(sp, 0),
+                                 fuel['Y'].get(sp, 0), ngrid)
+
     return pyFLUT.Flame1D(output_dict=output_dict, data=data,
                           variables=parameters)
 
@@ -106,3 +116,21 @@ def test_run(mocked_run_sldf, flut):
     assert flut.ndim == 5
     # check if T == 0
     assert (flut['T'] == 0).all()
+
+    alphac = flut.alphac
+    vol = flut.volatiles['Y']
+    ch = flut.chargases['Y']
+    ox = flut.oxidizer['Y']
+    species = ['CO', 'CH4', 'O2', 'N2']
+
+    # this method works only if Y is defined between 0 and 1
+    Y = flut.input_variable_values('Y')[1]
+    for sp in species:
+        vol, ch, ox = (s.get(sp, 0) for s in (
+            flut.volatiles['Y'], flut.chargases['Y'],
+            flut.oxidizer['Y']))
+        assert flut.extract_values(sp, Z=1, Y=1) == vol
+        assert flut.extract_values(sp, Z=1, Y=0) == ch
+        assert flut.extract_values(sp, Z=0, Y=0) == ox
+        assert flut.extract_values(
+            sp, Z=1, Y=Y) == mixing(ch, vol, alphac, Y)

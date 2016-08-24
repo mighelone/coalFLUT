@@ -31,7 +31,7 @@ flut:
     points: 101
   Y:
     method: list
-    values: [0, 1]
+    values: [0, 0.5, 1]
     #method: linspace
     #values:
     #  - 0
