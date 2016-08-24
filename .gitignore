@@ -77,3 +77,7 @@ ULF_DUMP.ulf
 flamelet_Hnorm*
 examples/case1/coalFLUT.h5
 examples/case1/flamelet_init.ulf
+sldf_Y*.ulf
+inp_*.ulf
+#*#
+*~

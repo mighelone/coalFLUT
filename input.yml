@@ -31,7 +31,7 @@ flut:
     points: 101
   Y:
     method: list
-    values: [1]
+    values: [0, 1]
     #method: linspace
     #values:
     #  - 0
@@ -41,7 +41,7 @@ flut:
     #method: list
     #values: [1e3]
     method: logspace
-    values: [-1.0, 1.0, 11]
+    values: [-1.0, 1.0, 2]
 
   Hnorm:
     method: list
