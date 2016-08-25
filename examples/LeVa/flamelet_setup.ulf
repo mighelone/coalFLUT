@@ -31,9 +31,9 @@
 // --------------------------------------------------------------------
 #define T_EQN T_flameletLe1;
 #define Y_EQN Yi_flameletLe1;
-#define UPDATE_EQN mixtureUpdate;
+#define UPDATE_EQN update_flameletLeVar;
 // ...set Le update type accordingly!
-#define LEWIS_UPDATE_TYPE constant;
+#define LEWIS_UPDATE_TYPE standard;
 // ...set to standard when computing with thermo diffusion (Soret)
 #define DTHERM_UPDATE_TYPE constant;
 // --------------------------------------------------------------------

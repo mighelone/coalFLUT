@@ -1,115 +1,136 @@
-"""
-Test coalFLUT class
-"""
-import pytest
 import coalFLUT
-import yaml
+import pytest
 import numpy as np
-import os
-import pyFLUT.ulf as ulf
+import mock
+import pyFLUT
 
-yaml_file = "files/input.yml"
-
-
-def init_class():
-    return coalFLUT.coalFLUT(input_yaml=yaml_file)
+input_yml = 'examples/Le1/input.yml'
 
 
-def read_yaml():
-    with open(yaml_file, "r") as f:
-        inp = yaml.load(f)
-    return inp
+@pytest.fixture
+def flut():
+    return coalFLUT.CoalFLUT(input_yml)
 
 
-def test_init():
-    #res = init_class()
-    inp = read_yaml()
-    # set Y to list
-    yaml_test = 'test.yml'
-    # set Y as list
-    inp['mixture_fraction']['Y']['method'] = 'list'
-    inp['mixture_fraction']['Y'][
-        'values'] = np.linspace(0, 1, 21).tolist()
-    with open(yaml_test, "w") as f:
-        yaml.dump(inp, f)
-    res = coalFLUT.coalFLUT(input_yaml=yaml_test)
-    assert (inp['mixture_fraction']['Y']['values'] == res.Y).all()
-    # set Y as linspace
-    inp['mixture_fraction']['Y']['method'] = 'linspace'
-    inp['mixture_fraction']['Y']['values'] = [0, 1, 21]
-    with open(yaml_test, "w") as f:
-        yaml.dump(inp, f)
-    res = coalFLUT.coalFLUT(input_yaml=yaml_test)
-    assert (np.linspace(*inp['mixture_fraction']
-                        ['Y']['values']) == res.Y).all()
-    os.remove(yaml_test)
+def mixing(p, v, alphac, Y):
+    alphac_one = 1 + alphac
+    return ((alphac_one * (1 - Y) * p + Y * v) /
+            (alphac_one * (1 - Y) + Y))
 
 
-def test_chargas():
-    res = init_class()
-    assert sum(res.chargas['Y'].values()) == 1
+def test_init(flut):
+    assert 'volatiles' in flut.streams
 
 
-def test_run():
-    inp = read_yaml()
-    fuel = {
-        'T': 600,
-        'H': 1e8,
-        'Y': {
-            'CH4': 0.5,
-            'CH2': 0.5,
-            'CO': 0,
-            'CO2': 0
-        }
-    }
-    ox = {
-        'T': 400,
-        'Y': {
-            'O2': 0.23,
-            'N2': 0.77
-        }
-    }
-    runner = ulf.UlfRun(inp['ulf']['basename'] +
-                        ".ulf", inp['ulf']['solver'])
-    runner.set('MECHANISM', inp['mechanism'])
-    Y = 0.2
-    chist = 10
-    Tf = fuel['T']
-    Hf = fuel['H']
-    res = coalFLUT.runUlf(inp['ulf'], Y, chist, fuel, ox)
-    assert isinstance(res, ulf.UlfData)
-    assert res.variables['Hf'] == Hf
-    assert res.variables['chist'] == chist
-    assert res.variables['Y'] == Y
+def test_chargases(flut):
+    # flut.set_chargas()
+    assert hasattr(flut, 'chargases')
+    assert (flut.chargases['T'] == flut.volatiles['T']).all()
+
+    gas = flut.gas
+    Mc = gas.atomic_weight('C')
+    Mo2 = gas.molecular_weights[gas.species_index('O2')]
+    Mn2 = gas.molecular_weights[gas.species_index('N2')]
+    Mco = gas.molecular_weights[gas.species_index('CO')]
+
+    n2_to_o2 = 79. / 21.
+    alpha = 0.5 * (Mo2 + n2_to_o2 * Mn2) / Mc
+    assert alpha == flut.alphac
+
+    mass_tot = Mco + 0.5 * n2_to_o2 * Mn2
+    assert flut.chargases['Y']['CO'] == Mco / mass_tot
+    assert flut.chargases['Y']['N2'] == 0.5 * n2_to_o2 * Mn2 / mass_tot
 
 
-def test_read_dictionary():
-    x = [0, 1, 2]
-    assert (coalFLUT.read_dict_list(method='list', values=x) == x).all()
-    x = [0, 1, 101]
-    assert (coalFLUT.read_dict_list(
-        method='linspace', values=x) == np.linspace(*x)).all()
-    x = [0, 1, 0.1]
-    assert (coalFLUT.read_dict_list(
-        method='arange', values=x) == np.arange(*x)).all()
-    x = {'method': 'linspace', 'values': [0, 1, 11]}
-    assert (coalFLUT.read_dict_list(**x) ==
-            np.linspace(*x['values'])).all()
-    x = {'values': [0, 1, 11], 'method': 'linspace'}
-    assert (coalFLUT.read_dict_list(**x) ==
-            np.linspace(*x['values'])).all()
+def test_mixfuel_Y0(flut):
+    mix = flut.mix_streams(Y=0)
+    assert np.allclose(mix['T'], flut.chargases['T'])
+    assert np.allclose(mix['H'], flut.chargases['H'])
+    for sp in flut.chargases['Y']:
+        assert mix['Y'][sp] == flut.chargases['Y'][sp]
 
 
-def test_normalize():
-    X = {'CO': 1, 'CO2': 0.5}
-    assert sum(coalFLUT.normalize(X).values()) == 1
+def test_mixfuel_Y1(flut):
+    mix = flut.mix_streams(Y=1)
+    assert np.allclose(mix['T'], flut.volatiles['T'])
+    assert np.allclose(mix['H'], flut.volatiles['H'])
+    for sp in flut.volatiles['Y']:
+        assert mix['Y'][sp] == flut.volatiles['Y'][sp]
 
 
-def test_mix_fuels():
-    res = init_class()
-    assert res.mix_fuels(1)['CH4'] == res.volatiles['Y']['CH4']
-    assert res.mix_fuels(0)['CO'] == res.chargas['Y']['CO']
+def test_mixfuel_Y(flut):
+    Y = 0.5
+    mix = flut.mix_streams(Y=Y)
+    alphac = flut.alphac
+    chargases = flut.chargases
+    volatiles = flut.volatiles
+
+    assert np.allclose(mix['H'],
+                       mixing(chargases['H'],
+                              volatiles['H'], alphac, Y))
+
+    for sp in ('CH4', 'CO'):
+        assert mix['Y'][sp] == mixing(
+            chargases['Y'].get(sp, 0),
+            volatiles['Y'].get(sp, 0),
+            alphac,
+            Y)
 
 
-def test_hf():
-    res = init_class()
+def run(fuel, oxidizer, parameters, par_format, ulf_reference, solver,
+        species, key_names, basename='res'):
+    '''
+    Mockup run function, returns a zero data structure
+    '''
+    output_dict = ['Z', 'T', 'rho', 'CO', 'CH4', 'O2', 'N2']
+    ngrid = 11
+    data = np.zeros((ngrid, len(output_dict)))
+    data[:, 0] = np.linspace(0, 1, ngrid)
+    n_sp = 3
+    for i, sp in enumerate(output_dict[n_sp:], n_sp):
+        data[:, i] = np.linspace(oxidizer['Y'].get(sp, 0),
+                                 fuel['Y'].get(sp, 0), ngrid)
+
+    return pyFLUT.Flame1D(output_dict=output_dict, data=data,
+                          variables=parameters)
+
+
+@mock.patch('coalFLUT.pyFLUT.ulf.dflut.run_sldf', side_effect=run)
+def test_run(mocked_run_sldf, flut):
+    # p = {'Y': 0.1, 'Hnorm': 0.5, 'chist': 0.1}
+    # res = coalFLUT.pyFLUT.ulf.dflut.run_sldf(fuel=None,
+    #                                         oxidizer=None,
+    #                                         parameters=p,
+    #                                         par_format=None,
+    #                                         ulf_reference=None,
+    #                                         solver=None,
+    #                                         species=None,
+    #                                         key_names=None,
+    #                                         basename=None)
+    # assert res.variables == p
+    # assert np.all(res['T'] == 0)
+    flut.run()
+    assert 'Z' in flut
+    for v in ['Z', 'Hnorm', 'Y', 'chist']:
+        assert v in flut.input_variables
+    assert flut.ndim == 5
+    # check if T == 0
+    assert (flut['T'] == 0).all()
+
+    alphac = flut.alphac
+    vol = flut.volatiles['Y']
+    ch = flut.chargases['Y']
+    ox = flut.oxidizer['Y']
+    species = ['CO', 'CH4', 'O2', 'N2']
+
+    # this method works only if Y is defined between 0 and 1
+    Y = flut.input_variable_values('Y')[1]
+    for sp in species:
+        vol, ch, ox = (s.get(sp, 0) for s in (
+            flut.volatiles['Y'], flut.chargases['Y'],
+            flut.oxidizer['Y']))
+        assert flut.extract_values(sp, Z=1, Y=1) == vol
+        assert flut.extract_values(sp, Z=1, Y=0) == ch
+        assert flut.extract_values(sp, Z=0, Y=0) == ox
+        assert flut.extract_values(
+            sp, Z=1, Y=Y) == mixing(ch, vol, alphac, Y)

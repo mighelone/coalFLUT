@@ -1,0 +1,78 @@
+# volatile composition
+# now the direct composition is given
+# in future we can also assign the C, H, O, N ultimate analysis
+# temperature can be given as list, arange or linspace, logspace followed by a list of values
+# arange or linspace, logspace are numpy functions
+volatiles:
+  Y:
+    CH4: 1
+  T:
+    min: 300
+    max: 700
+
+oxidizer:
+  X:
+    N2: 0.79
+    O2: 0.21
+  T:
+    min: 300
+    max: 600
+
+pressure: 101325
+    
+mechanism: ch4_smooke.xml
+
+# two mixture fractions are defined Z1 and Z2, which are respectively the devolatilization and
+# the char burnout gases
+# Z = Z1 + Z2 defined in [0:1]
+# Y = Z1 / (Z1 + Z2) defined in [0:1]
+flut:
+  Z:
+    points: 101
+  Y:
+    method: list
+    values: [0, 0.5, 1]
+    #method: linspace
+    #values:
+    #  - 0
+    #  - 1
+    #  - 31
+  chist:
+    #method: list
+    #values: [1e3]
+    method: logspace
+    values: [-1.0, 1.0, 2]
+
+  Hnorm:
+    method: list
+    values: [0, 1]
+
+  pv:
+    CO: 1
+    CO2: 1
+
+  c:
+    points: 101
+
+  varZ:
+    points: 5
+
+  variables:
+    ['rho', 'T']
+  solver: OpenFOAM
+    
+ulf:
+  # solver: /shared_home/vascella/Codes/ulf/build_git2/ulf.x
+  solver: /home/vascella/Codes/ulf/build/ulf.x
+  reference: flamelet_setup.ulf
+  basename: sldf
+  format: "{:5.4f}"
+
+  keys:
+    z_st: ZST
+    basename: RESULT_BASENAME
+    n_points: REFINE_TARGET
+    mechanism: MECHANISM
+    chist: CHIST
+    pressure: PRESSURE
+
