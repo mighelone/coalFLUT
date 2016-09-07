@@ -28,6 +28,38 @@ class Coal1D(pyFLUT.Flame1D):
         super(Coal1D, self).__init__(
             output_dict=index, data=data, variables=file_vars,
             input_var='X')
+        # calc Z and Y
+        Z = self['Z'] + self['ZCfix']
+        Y = np.zeros_like(Z)
+        cond = Z > 0
+        Y[cond] = self['Z'] / Z[cond]
+
+        self['Zsum'] = Z
+        self['Y'] = Y
+
+    def calc_Hnorm(self, flut):
+        """
+        Calculate the normalized enthalpy levels for a coal1D solution
+
+        Parameters
+        ----------
+        flut: pyFLUT.Flut
+        Lookup table. It has to be defined with Z and Y
+        """
+        z = self['Z']
+        Hc, Ho, Hv = (getattr(flut, stream)['H'][:, np.newaxis]
+                      for stream in ('chargases', 'oxidizer',
+                                     'volatiles'))
+
+        Hf = (Y * Hv + (1 - Y) * (1 + flut.alphac) * Hc)
+
+        # min and max enthalpy
+        H = Ho * (1 - Z) + Hf * z
+
+        self['Hnorm'] = (self['hMean'] - H[0]) / (H[1] - H[0])
+        self.Ho = Ho
+        self.Hv = Hv
+        self.Hc = Hc
 
     def flame_index(self, species=['CH4', 'C2H4', 'C6H6']):
         X = self['X']
@@ -42,49 +74,6 @@ class Coal1D(pyFLUT.Flame1D):
         grad_oxid = self.gradient('oxid', along='X')
         self['FI'] = grad_fuel * grad_oxid
         self['FIn'] = 0.5 * (1 + self['FI'] / np.abs(self['FI']))
-
-    def calc_Hnorm(self, H_o, H_f):
-        """
-        Calculate the normalized enthalpy levels for a coal1D solution
-
-        Parameters
-        ----------
-        H_o: np.array
-            array containing minimum and max oxidizer enthalpy in the table
-        H_f: np.array
-            array containing minimum and max fuel enthalpy in the table
-        z_DH: float, default=0.1
-            minimum values of Z for negative enthalpy levels
-        use_zb: bool, default=True
-            use the bilger mixture fraction (defined before)
-        """
-        z = self['Z']
-        hMean = self['hMean']
-        if isinstance(H_o, list):
-            H_o = np.array(H_o)
-        if isinstance(H_f, list):
-            H_f = np.array(H_f)
-        H_z = (z[:, np.newaxis] * H_f[np.newaxis] +
-               (1 - z[:, np.newaxis]) * H_o[np.newaxis])
-
-        # index_neg = (hMean < H_z[:, 0]) & (z != 0) & (z != 1)
-        # index_lean = z < z_DH
-        # index_neg_lean = index_neg & index_lean
-        # index_neg_rich = index_neg & (~ index_lean)
-        Hnorm = (hMean - H_z[:, 0]) / (H_z[:, 1] - H_z[:, 0])
-        # H_DH_z = np.zeros_like(z)
-        # H_DH_z[index_neg_lean] = (z_DH / z[index_neg_lean] *
-        #                          (hMean[index_neg_lean] -
-        #                           H_o[0]) + H_o[0])
-        # H_DH_z[index_neg_rich] = ((1 - z_DH) / (1 - z[index_neg_rich]) *
-        #                          (hMean[index_neg_rich] - H_f[0]) +
-        #                          H_f[0])
-
-        # Hnorm[index_neg] = (H_DH_z[index_neg] -
-        #                    H_DH[0]) / (H_DH[1] - H_DH[0])
-        self['Hnorm'] = Hnorm
-        self.H_o = H_o
-        self.H_f = H_f
 
     def calc_zN2(self, N2f=0):
         """
