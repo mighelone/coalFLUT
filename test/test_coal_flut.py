@@ -35,7 +35,11 @@ def test_chargases(flut):
 
     n2_to_o2 = 79. / 21.
     alpha = 0.5 * (Mo2 + n2_to_o2 * Mn2) / Mc
+
+    gas.TPY = 300, None, flut.oxidizer['Y']
+    alpha_danny = 0.5 * gas.mean_molecular_weight / 0.21 / Mc
     assert alpha == flut.alphac
+    assert alpha_danny == flut.alphac
 
     mass_tot = Mco + 0.5 * n2_to_o2 * Mn2
     assert flut.chargases['Y']['CO'] == Mco / mass_tot
