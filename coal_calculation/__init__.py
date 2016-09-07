@@ -11,8 +11,9 @@ import numpy as np
 import pyFLUT
 from pyFLUT.flame1D import extract_from_filename
 import matplotlib.pyplot as plt
+from autologging import logged
 
-
+@logged
 class Coal1D(pyFLUT.Flame1D):
 
     def __init__(self, file_input):
@@ -32,11 +33,11 @@ class Coal1D(pyFLUT.Flame1D):
         Z = self['Z'] + self['ZCfix']
         Y = np.zeros_like(Z)
         cond = Z > 0
-        Y[cond] = self['Z'] / Z[cond]
+        Y[cond] = self['Z'][cond] / Z[cond]
 
         self['Zsum'] = Z
         self['Y'] = Y
-
+    
     def calc_Hnorm(self, flut):
         """
         Calculate the normalized enthalpy levels for a coal1D solution
@@ -46,49 +47,25 @@ class Coal1D(pyFLUT.Flame1D):
         flut: pyFLUT.Flut
         Lookup table. It has to be defined with Z and Y
         """
-        z = self['Z']
         Hc, Ho, Hv = (getattr(flut, stream)['H'][:, np.newaxis]
                       for stream in ('chargases', 'oxidizer',
                                      'volatiles'))
-
-        Hf = (Y * Hv + (1 - Y) * (1 + flut.alphac) * Hc)
-
-        # min and max enthalpy
-        H = Ho * (1 - Z) + Hf * z
-
-        self['Hnorm'] = (self['hMean'] - H[0]) / (H[1] - H[0])
         self.Ho = Ho
         self.Hv = Hv
         self.Hc = Hc
 
-    def flame_index(self, species=['CH4', 'C2H4', 'C6H6']):
-        X = self['X']
-        y_fuel = np.zeros_like(X)
-        for sp in species:
-            y_fuel += self[sp]
-        y_fuel /= y_fuel.max()
-        y_oxid = self['O2'] / self['O2'].max()
-        self['fuel'] = y_fuel
-        self['oxid'] = y_oxid
-        grad_fuel = self.gradient('fuel', along='X')
-        grad_oxid = self.gradient('oxid', along='X')
-        self['FI'] = grad_fuel * grad_oxid
-        self['FIn'] = 0.5 * (1 + self['FI'] / np.abs(self['FI']))
+        Y = self['Y']
+        Z = self['Zsum']
+        Hf = (Y * Hv + (1 - Y) * (1 + flut.alphac) * Hc)
 
-    def calc_zN2(self, N2f=0):
-        """
-        Calculate Z for coal1D solution using N2
+        # min and max enthalpy
+        H = Ho * (1 - Z) + Hf * Z
 
-        Parameters
-        ----------
-        coal1D: UlfData
-            ulf solution
-        N2f: float, default=0
-            N2 contents in fuel
-        """
-        N2 = self['N2']
-        N2o = N2[0]
-        self['Zb'] = (N2o - N2) / (N2o - N2f)
+        self['Hmin'] = H[0]
+        self['Hmax'] = H[1]
+
+        self['Hnorm'] = (self['hMean'] - H[0]) / (H[1] - H[0])
+
 
     def calc_a_priori_analysis(self, scl, flut, output='simple', correct=False):
         """
@@ -116,11 +93,14 @@ class Coal1D(pyFLUT.Flame1D):
         X = self['X']
         points = np.empty((len(X), len(flut.input_dict)))
         for i, inp_var in enumerate(flut.input_variables):
-            if inp_var == 'Y':
-                points[:, i] = 1
-            elif inp_var == 'cc':
+            if inp_var == 'cc':
+                self.__log.debug('Set %s=0 to index %s', inp_var, i)
                 points[:, i] = 0
+            elif inp_var == 'Z':
+                self.__log.debug('Set Zsum / %s to index %s', inp_var, i)
+                points[:, i] = self['Zsum']
             else:
+                self.__log.debug('Set %s to index %s', inp_var, i)
                 points[:, i] = self[inp_var]
         yc_max = flut.getvalue(points, 'yc_max')
         yc_min = flut.getvalue(points, 'yc_min')
@@ -132,6 +112,7 @@ class Coal1D(pyFLUT.Flame1D):
         cc[cc < 0] = 0
         cc[cc > 1] = 1
         points[:, flut.input_variable_index('cc')] = cc
+        self.__log.debug('Set cc to index %s')
 
         if correct and scl in ['T', 'rho']:
             dH = self.dH(flut)
@@ -164,11 +145,7 @@ class Coal1D(pyFLUT.Flame1D):
             FLUT table
         """
         hMean = self['hMean']
-        z = self['Z']
-        H_f = self.H_f
-        H_o = self.H_o
-        H_min = (1 - z) * H_o[0] + z * H_f[0]
-        dH = H_min - hMean
+        dH = self['Hmin'] - hMean
         dH[dH < 0] = 0
         return dH
 
