@@ -4,6 +4,7 @@
 import argparse
 import logging
 import coalFLUT
+import pyFLUT
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -38,44 +39,44 @@ if __name__ == "__main__":
 
     n_p = argument.n_p
     flamelet_config = argument.flamelet_config
-    logger = logging.getLogger('main')
+    logger = logging.getLogger('')
 
-    if argument.debug:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    log_level = logging.DEBUG if argument.debug else logging.INFO
 
-    logger.debug('flamelet_config %s', flamelet_config)
-    logger.debug('Initialize flut object')
+    logger.setLevel(log_level)
+
+    logging.info('runCoalFLUT use pyFLUT version: %s', pyFLUT.__version__)
+    logging.debug('flamelet_config %s', flamelet_config)
+    logging.debug('Initialize flut object')
     flut = coalFLUT.CoalFLUT(argument.yml)
     flut_file = flut.basename + '.h5'
     if argument.readfiles:
-        logger.debug('Read existing files')
+        logging.debug('Read existing files')
         flut.read_files()
     elif argument.hdf5:
-        logger.debug('Read previous hdf5 %s', flut_file)
+        logging.debug('Read previous hdf5 %s', flut_file)
         flut.read_bin(flut_file)
     else:
-        logger.debug('Run ULF')
+        logging.debug('Run ULF')
         flut.run(n_p=argument.n_p)
-    logger.debug('Results: %s', flut.__str__())
+    logging.debug('Results: %s', flut.__str__())
     flut.squeeze()
-    logger.debug('Results after squeezing: %s', flut.__str__())
+    logging.debug('Results after squeezing: %s', flut.__str__())
     if not argument.hdf5:
-        logger.debug('Write h5 file %s', flut_file)
+        logging.debug('Write h5 file %s', flut_file)
         flut.write_bin(flut_file)
     else:
-        logger.debug('Don\'t write h5 file')
+        logging.debug('Don\'t write h5 file')
 
     # process table
     if not argument.run_only:
         # calc progress variable
-        logger.debug('Calc progress variable %s', flut.pv_definition)
+        logging.debug('Calc progress variable %s', flut.pv_definition)
         flut.calc_progress_variable()
-        logger.debug('Add missing properties')
+        logging.debug('Add missing properties')
         flut.add_missing_properties(verbose=True)
         if flamelet_config:
-            logger.debug('Export data to HDF5 flamelet_config %s',
-                         flamelet_config)
+            logging.debug('Export data to HDF5 flamelet_config %s',
+                          flamelet_config)
             flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
