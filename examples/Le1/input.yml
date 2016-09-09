@@ -67,6 +67,8 @@ ulf:
   reference: flamelet_setup.ulf
   basename: sldf
   format: "{:5.4f}"
+  # if true do not recalculate the existing files
+  rerun: true
 
   keys:
     z_st: ZST
