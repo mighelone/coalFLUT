@@ -61,6 +61,11 @@ if __name__ == "__main__":
         flut.run(n_p=argument.n_p)
     logging.debug('Results: %s', flut.__str__())
     flut.squeeze()
+    # calc progress variable
+    logging.debug('Calc progress variable %s', flut.pv_definition)
+    flut.calc_progress_variable()
+    logging.debug('Add missing properties')
+    flut.add_missing_properties(verbose=True)
     logging.debug('Results after squeezing: %s', flut.__str__())
     if not argument.hdf5:
         logging.debug('Write h5 file %s', flut_file)
@@ -70,11 +75,9 @@ if __name__ == "__main__":
 
     # process table
     if not argument.run_only:
-        # calc progress variable
-        logging.debug('Calc progress variable %s', flut.pv_definition)
-        flut.calc_progress_variable()
-        logging.debug('Add missing properties')
-        flut.add_missing_properties(verbose=True)
+        flut_cc = flut.convert_cc_to_uniform_grid(
+            n_points=101, n_proc=n_p, verbose=True)
+        flut_cc.write_bin('coalFLUT-cc.h5')
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
