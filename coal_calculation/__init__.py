@@ -13,6 +13,7 @@ from pyFLUT.flame1D import extract_from_filename
 import matplotlib.pyplot as plt
 from autologging import logged
 
+
 @logged
 class Coal1D(pyFLUT.Flame1D):
 
@@ -37,7 +38,11 @@ class Coal1D(pyFLUT.Flame1D):
 
         self['Zsum'] = Z
         self['Y'] = Y
-    
+
+    def calc_Zstar(self, flut):
+        self['Zstar'] = (self['Zsum'] *
+                         (self['Y'] + (1 - self['Y']) * (1 + flut.alphac)))
+
     def calc_Hnorm(self, flut):
         """
         Calculate the normalized enthalpy levels for a coal1D solution
@@ -66,7 +71,6 @@ class Coal1D(pyFLUT.Flame1D):
 
         self['Hnorm'] = (self['hMean'] - H[0]) / (H[1] - H[0])
 
-
     def calc_a_priori_analysis(self, scl, flut, output='simple', correct=False):
         """
         Calculate scl array from a-priori analysis
@@ -90,6 +94,10 @@ class Coal1D(pyFLUT.Flame1D):
         np.array(N), np.array(N, 4), np.array(N)
             X, points, scl arrays
         """
+        if 'Hnorm' not in self:
+            self.calc_Hnorm(flut)
+        if 'Zstar' not in self:
+            self.calc_Zstar(flut)
         X = self['X']
         points = np.empty((len(X), len(flut.input_dict)))
         for i, inp_var in enumerate(flut.input_variables):
@@ -97,8 +105,8 @@ class Coal1D(pyFLUT.Flame1D):
                 self.__log.debug('Set %s=0 to index %s', inp_var, i)
                 points[:, i] = 0
             elif inp_var == 'Z':
-                self.__log.debug('Set Zsum / %s to index %s', inp_var, i)
-                points[:, i] = self['Zsum']
+                self.__log.debug('Set Zstar / %s to index %s', inp_var, i)
+                points[:, i] = self['Zstar']
             else:
                 self.__log.debug('Set %s to index %s', inp_var, i)
                 points[:, i] = self[inp_var]
