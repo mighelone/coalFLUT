@@ -1,0 +1,157 @@
+"""
+coalPFLUT
+========
+"""
+from coalFLUT import *
+import multiprocessing as mp
+import logging
+from autologging import logged
+import shutil
+import pyFLUT.ulf as ulf
+from termcolor import colored
+import glob
+import os
+
+def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, species,
+             key_names, basename='res', rerun=True):
+    """
+    Run a burner stabilized simulation with ULF
+
+    Parameters
+    ----------
+    fuel: dict
+        Fuel composition {T: 300, 'Y':{'CH4': 1}}
+    oxidizer: dict
+        Oxidizer composition {T: 300, 'Y':{'N2': 0.77, 'O2': 0.23}}
+    parameters: dict
+        Parameters of the simulations. {'chist':0.1, 'Y':0.5}.
+        It must contains 'chist' as key
+    par_format: str
+        format string for saving chist in the result solutions
+    ulf_reference: str
+        reference file for the ulf simulation
+    solver: str
+        path of the ULF solver
+    species: list
+        list of species names
+    key_names: dict
+        dictionary containing keynames for ULF setup files:
+        ('basename', 'chist')
+    basename: str
+        basename used for saving ulf results (default: 'res')
+    rerun: bool
+        Rerun if existing output file is found
+    """
+    logger = logging.getLogger('main.' + __name__ + '.run_sldf')
+    label = ''.join('_' + p + par_format.format(v)
+                    for p, v in parameters.items())
+    logger.debug('label %s -> %s', parameters, label)
+    basename_run = basename + label
+    logger.debug('basename_run: {}'.format(basename_run))
+    basename_calc = basename_run + "_run"
+    logger.debug('basename_calc: {}'.format(basename_calc))
+    out_file = basename_run + '.ulf'
+    logger.debug('out_file: %s', out_file)
+    input_file = "inp" + label + ".ulf"
+    logger.debug('input_file: {}'.format(input_file))
+    shutil.copyfile(ulf_reference, input_file)
+    runner = ulf.UlfRun(input_file, solver)
+    runner[key_names['basename']] = basename_calc
+    runner[key_names['chist']] = parameters['chist']
+    pyFLUT.utilities.set_species(runner, fuel, oxidizer, species)
+    if not rerun and os.path.exists(out_file):
+        print(colored('Read existing file {}'.format(out_file), 'blue'))
+        return pyFLUT.read_ulf(out_file)
+    try:
+        print('Running {}'.format(basename_calc))
+        res = runner.run()
+        logger.debug('End run')
+        # set the run parameter -> it is necessary for aggregating the
+        # data
+        res.variables = parameters
+        logger.debug('Parameters: {}'.format(res.variables))
+        print(colored('End run {}'.format(basename_calc), 'green'))
+
+        shutil.copyfile(basename_calc + 'final.ulf', out_file)
+        logger.debug('Copy {} to {}'.format(
+            basename_calc + 'final.ulf', out_file))
+    except:
+        print(colored('Error run {}'.format(basename_calc), 'red'))
+        res = None
+
+    files_to_delete = glob.iglob(basename_calc + '*')
+    logger.debug('Delete: {}'.format(files_to_delete))
+    [os.remove(f) for f in files_to_delete]
+    return res
+
+
+# New implementation #
+
+@logged
+class CoalPFLUT(CoalFLUT):
+    streams = ['volatiles', 'oxidizer']
+
+    def __init__(self, input_yml):
+        super(CoalPFLUT, self).__init__(input_yml=input_yml)
+
+    def run(self, n_p=1):
+        """
+        Run ulf for generating look-up tables running ulf solutions
+
+        Parameters
+        ----------
+        n_p: int:
+          number of processes
+        """
+        if n_p > 1:
+            use_mp = True
+            pool = mp.Pool(processes=n_p)
+            res_async = []
+        else:
+            use_mp = False
+            results = []
+
+        oxid = {}
+        oxid['Y'] = self.oxidizer['Y']
+        for Y in self.Y:
+            mix = self.mix_streams(Y)
+            self.__log.debug(
+                'Y=%s H_mix=%s', Y, mix['H'])
+
+            for Hnorm in self.Hnorm:
+                self.__log.debug('Y=%s Hnorm=%s', Y, Hnorm)
+                fuel = mix.copy()
+                H_fuel = ((mix['H'][1] - mix['H'][0]) *
+                          Hnorm + mix['H'][0])
+                self.__log.debug('H_fuel=%s', H_fuel)
+                fuel['T'] = pyFLUT.utilities.calc_Tf(
+                    self.gas, H_fuel, self.pressure, mix['Y'])
+                self.__log.debug('Tf=%s', fuel['T'])
+                oxid = self.oxidizer.copy()
+                H_oxid = (oxid['H'][1] - oxid['H'][0]) * Hnorm + oxid['H'][0]
+                oxid['T'] = pyFLUT.utilities.calc_Tf(
+                    self.gas, H_oxid, self.pressure, oxid['Y'])
+                self.__log.debug('Toxidizer=%s', oxid['T'])
+                for chist in self.chist:
+                    parameters = {'Hnorm': Hnorm,
+                                  'Y': Y, 'chist': chist}
+                    args = (fuel,
+                            oxid,
+                            parameters,
+                            self.format,
+                            self.ulf_reference,
+                            self.solver,
+                            self.gas.species_names,
+                            self.keys,
+                            self.basename,
+                            self.rerun)
+                    if use_mp:
+                        res_async.append(
+                            pool.apply_async(run_bs, args=args))
+                    else:
+                        results.append(run_bs(*args))
+
+        if use_mp:
+            results = [r.get() for r in res_async]
+
+        self.assemble_data(results)

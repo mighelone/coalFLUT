@@ -4,6 +4,7 @@
 import argparse
 import logging
 import coalFLUT
+import coalPFLUT
 import pyFLUT
 
 if __name__ == "__main__":
@@ -35,6 +36,8 @@ if __name__ == "__main__":
                         default=None, help='Export to flameletConfig')
     parser.add_argument('-t', dest='turbulent', action='store_true',
                         help='Create table for turbulent flows')
+    parser.add_argument('-p', dest='pflut', action='store_true',
+                        help='Create table based on burner stabilized flames')
     argument = parser.parse_args()
 
     n_p = argument.n_p
@@ -48,7 +51,10 @@ if __name__ == "__main__":
     logging.info('runCoalFLUT use pyFLUT version: %s', pyFLUT.__version__)
     logging.debug('flamelet_config %s', flamelet_config)
     logging.debug('Initialize flut object')
-    flut = coalFLUT.CoalFLUT(argument.yml)
+    if not argument.pflut: 
+        flut = coalFLUT.CoalFLUT(argument.yml)
+    else:
+        flut = coalPFLUT.CoalPFLUT(argument.yml)
     flut_file = flut.basename + '.h5'
     if argument.readfiles:
         logging.debug('Read existing files')
