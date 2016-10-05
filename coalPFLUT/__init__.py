@@ -77,13 +77,13 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
         shutil.copyfile(basename_calc + 'final.ulf', out_file)
         logger.debug('Copy {} to {}'.format(
             basename_calc + 'final.ulf', out_file))
+        files_to_delete = glob.iglob(basename_calc + '*')
+        logger.debug('Delete: {}'.format(files_to_delete))
+        [os.remove(f) for f in files_to_delete]
     except:
         print(colored('Error run {}'.format(basename_calc), 'red'))
         res = None
 
-    files_to_delete = glob.iglob(basename_calc + '*')
-    logger.debug('Delete: {}'.format(files_to_delete))
-    [os.remove(f) for f in files_to_delete]
     return res
 
 
