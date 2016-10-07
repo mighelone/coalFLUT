@@ -59,7 +59,8 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
     runner = ulf.UlfRun(input_file, solver)
     runner[key_names['basename']] = basename_calc
     runner['Z_VALUE'] = parameters['Z']
-    runner['TFIX'] = fuel['T']+10.0
+    runner['TFIX'] = fuel['T']+20.0
+    runner['SL_GUESS'] = fuel['u']
     pyFLUT.utilities.set_species(runner, fuel, oxidizer, species)
     if not rerun and os.path.exists(out_file):
         print(colored('Read existing file {}'.format(out_file), 'blue'))
@@ -160,7 +161,9 @@ class CoalPFLUT(CoalFLUT):
                 oxid = self.oxidizer.copy()
                 oxid['T'] = oxid['T'][0]
                 self.__log.debug('Toxidizer=%s', oxid['T'])
+                #run freely propagating for Hnorm = 1
                 Hnorm = 1.0
+                fuel['u'] = 0.01
                 parameters = {'Hnorm': Hnorm,
                               'Y': Y, 'Z': Z}
                 args = (fuel,
@@ -176,8 +179,35 @@ class CoalPFLUT(CoalFLUT):
                 if use_mp:
                     res_async.append(
                         pool.apply_async(run_bs, args=args))
+                    sL = res_async[-1].get()['u'][0]
+
                 else:
                     results.append(run_bs(*args))
+                    sL = results[-1]['u'][0]
+
+                print(colored('sL is {}'.format(sL), 'magenta'))
+                for Hnorm in self.Hnorm[0:-1]:
+                    fuel['u'] = (Hnorm+0.01)*sL 
+                    print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
+                    parameters = {'Hnorm': Hnorm,
+                                  'Y': Y, 'Z': Z}
+                    args = (fuel,
+                            oxid,
+                            parameters,
+                            self.format,
+                            self.ulf_reference,
+                            self.solver,
+                            self.gas.species_names,
+                            self.keys,
+                            self.basename,
+                            self.rerun)
+
+                    if use_mp:
+                        res_async.append(
+                            pool.apply_async(run_bs, args=args))
+                    else:
+                        results.append(run_bs(*args))
+                        
 
         if use_mp:
             results = [r.get() for r in res_async]
