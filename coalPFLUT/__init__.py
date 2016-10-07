@@ -103,8 +103,8 @@ class CoalPFLUT(CoalFLUT):
         runner = ulf.UlfRun(
             file_input=self.ulf_reference, solver=self.solver)
         runner[self.keys['n_points']] = input_dict['ulf']['points']
-        self.Z = np.linspace(
-            input_dict['flut']['Z']['min'], input_dict['flut']['Z']['max'], input_dict['flut']['Z']['points'])
+        self.Z = pyFLUT.utilities.read_dict_list(
+            **input_dict['flut']['Z'])
 
     def assemble_data(self, results):
         '''
