@@ -179,15 +179,38 @@ class CoalPFLUT(CoalFLUT):
                 if use_mp:
                     res_async.append(
                         pool.apply_async(run_bs, args=args))
-                    sL = res_async[-1].get()['u'][0]
-
                 else:
                     results.append(run_bs(*args))
                     sL = results[-1]['u'][0]
+                    print(colored('serial: sL is {}'.format(sL), 'magenta'))
+                    for Hnorm in self.Hnorm[1:-1]:
+                        fuel['u'] = (Hnorm+0.1)*sL 
+                        print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
+                        parameters = {'Hnorm': Hnorm,
+                                      'Y': Y, 'Z': Z}
+                        args = (fuel,
+                                oxid,
+                                parameters,
+                                self.format,
+                                self.ulf_reference,
+                                self.solver,
+                                self.gas.species_names,
+                                self.keys,
+                                self.basename,
+                                self.rerun)
 
-                print(colored('sL is {}'.format(sL), 'magenta'))
-                for Hnorm in self.Hnorm[0:-1]:
-                    fuel['u'] = (Hnorm+0.01)*sL 
+                        results.append(run_bs(*args))
+
+        if use_mp:
+            numberfpRuns=len(res_async)
+            for run in range(0,numberfpRuns):
+                tmp = res_async[run].get();
+                sL = tmp['u'][0]
+                Y = tmp['Y']
+                Z = tmp['Z']
+                print(colored('parallel: sL is {}'.format(sL), 'magenta'))
+                for Hnorm in self.Hnorm[1:-1]:
+                    fuel['u'] = (Hnorm+0.1)*sL 
                     print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
                     parameters = {'Hnorm': Hnorm,
                                   'Y': Y, 'Z': Z}
@@ -201,15 +224,9 @@ class CoalPFLUT(CoalFLUT):
                             self.keys,
                             self.basename,
                             self.rerun)
+                    res_async.append(
+                        pool.apply_async(run_bs, args=args))
 
-                    if use_mp:
-                        res_async.append(
-                            pool.apply_async(run_bs, args=args))
-                    else:
-                        results.append(run_bs(*args))
-                        
-
-        if use_mp:
             results = [r.get() for r in res_async]
 
         self.assemble_data(results)
