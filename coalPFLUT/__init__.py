@@ -103,6 +103,8 @@ class CoalPFLUT(CoalFLUT):
         runner = ulf.UlfRun(
             file_input=self.ulf_reference, solver=self.solver)
         runner[self.keys['n_points']] = input_dict['ulf']['points']
+        self.Z = np.linspace(
+            input_dict['flut']['Z']['min'], input_dict['flut']['Z']['max'], input_dict['flut']['Z']['points'])
 
     def assemble_data(self, results):
         '''
@@ -153,7 +155,7 @@ class CoalPFLUT(CoalFLUT):
             self.__log.debug(
                 'Y=%s H_mix=%s', Y, mix['H'])
 
-            for Z in np.linspace(0.,1.,self.z_points):
+            for Z in self.Z:
                 self.__log.debug('Y=%s Z=%s', Y, Z)
                 fuel = mix.copy()
                 fuel['T'] = fuel['T'][0]
@@ -208,7 +210,7 @@ class CoalPFLUT(CoalFLUT):
                 sL = tmp['u'][0]
                 Y = tmp['Y']
                 Z = tmp['Z']
-                print(colored('parallel: sL is {}'.format(sL), 'magenta'))
+                print(colored('parallel: sL is {}, Y is {}, Z is {}'.format(sL,Y,Z), 'magenta'))
                 for Hnorm in self.Hnorm[1:-1]:
                     fuel['u'] = (Hnorm+0.1)*sL 
                     print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
