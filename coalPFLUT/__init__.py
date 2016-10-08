@@ -8,6 +8,7 @@ import logging
 from autologging import logged
 import shutil
 import pyFLUT.ulf as ulf
+import pyFLUT
 from termcolor import colored
 import glob
 import os
@@ -115,6 +116,23 @@ class CoalPFLUT(CoalFLUT):
         results: list(ulf.UlfData)
            list of ulf.UlfData solutions with variables ['Hnorm', 'chist', 'Y']
         '''
+        # create a new X grid -> non uniform X grid
+        X_new = np.unique(
+            np.sort(np.concatenate([r['X'] for r in results])))
+        # ignore values < 0
+        X_new = X_new[X_new>=0.0]
+        self.__log.debug('Create X_new with %s points', len(X_new))
+        numberOfResults=len(results)
+        for idx in range(0,numberOfResults):
+            r = results[idx]
+            if r.data[0][0]<0.0:
+                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                           input_var=r.input_variables,
+                           data=r.data[1:],
+                           variables=r.variables)
+        # interpolate existing solutions to the new grid
+        [r.convert_to_new_grid(variable='X', new_grid=X_new)
+         for r in results]
         super(pyFLUT.ulf.dflut.DFLUT_2stream, self).__init__(
             input_data=results, key_variable='X', verbose=True)
         self.__log.debug('Create data structure with dimension %s', self.ndim)
