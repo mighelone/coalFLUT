@@ -106,8 +106,8 @@ class CoalPFLUT(CoalFLUT):
         runner[self.keys['n_points']] = input_dict['ulf']['points']
         self.Z = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['Z'])
-        self.velRatio = pyFLUT.utilities.read_dict_list(
-            **input_dict['flut']['velRatio'])
+        self.VelRatio = pyFLUT.utilities.read_dict_list(
+            **input_dict['flut']['VelRatio'])
         self.deltaT = input_dict['flut']['Hnorm']['deltaT']
 
     def assemble_data(self, results):
@@ -185,9 +185,9 @@ class CoalPFLUT(CoalFLUT):
                 oxid['T'] = oxid['T'][0]
                 self.__log.debug('Toxidizer=%s', oxid['T'])
                 #run freely propagating for Hnorm = 1
-                velRatio = 1.0
+                VelRatio = 1.0
                 fuel['u'] = 0.01
-                parameters = {'velRatio': velRatio,
+                parameters = {'VelRatio': VelRatio,
                               'Y': Y, 'Z': Z}
                 args = (fuel,
                         oxid,
@@ -207,10 +207,10 @@ class CoalPFLUT(CoalFLUT):
                     sL = results[-1]['u'][0]
                     hMean = results[-1]['hMean'][-1]
                     print(colored('serial: sL is {}'.format(sL), 'magenta'))
-                    for velRatio in self.velRatio[:-1]:
-                        fuel['u'] = velRatio*sL 
-                        print(colored('velRatio is {}. u is {}'.format(velRatio,fuel['u']), 'yellow'))
-                        parameters = {'velRatio': velRatio,
+                    for VelRatio in self.VelRatio[:-1]:
+                        fuel['u'] = VelRatio*sL 
+                        print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
+                        parameters = {'VelRatio': VelRatio,
                                       'Y': Y, 'Z': Z}
                         args = (fuel,
                                 oxid,
@@ -233,10 +233,10 @@ class CoalPFLUT(CoalFLUT):
                 Y = tmp['Y']
                 Z = tmp['Z']
                 print(colored('parallel: sL is {}, Y is {}, Z is {}'.format(sL,Y,Z), 'magenta'))
-                for velRatio in self.velRatio[:-1]:
-                    fuel['u'] = velRatio*sL 
-                    print(colored('velRatio is {}. u is {}'.format(velRatio,fuel['u']), 'yellow'))
-                    parameters = {'velRatio': velRatio,
+                for VelRatio in self.VelRatio[:-1]:
+                    fuel['u'] = VelRatio*sL 
+                    print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
+                    parameters = {'VelRatio': VelRatio,
                                   'Y': Y, 'Z': Z}
                     args = (fuel,
                             oxid,
