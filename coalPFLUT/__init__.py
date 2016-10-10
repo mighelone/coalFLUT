@@ -106,6 +106,9 @@ class CoalPFLUT(CoalFLUT):
         runner[self.keys['n_points']] = input_dict['ulf']['points']
         self.Z = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['Z'])
+        self.velRatio = pyFLUT.utilities.read_dict_list(
+            **input_dict['flut']['velRatio'])
+        self.deltaT = input_dict['flut']['Hnorm']['deltaT']
 
     def assemble_data(self, results):
         '''
@@ -182,9 +185,9 @@ class CoalPFLUT(CoalFLUT):
                 oxid['T'] = oxid['T'][0]
                 self.__log.debug('Toxidizer=%s', oxid['T'])
                 #run freely propagating for Hnorm = 1
-                Hnorm = 1.0
+                velRatio = 1.0
                 fuel['u'] = 0.01
-                parameters = {'Hnorm': Hnorm,
+                parameters = {'velRatio': velRatio,
                               'Y': Y, 'Z': Z}
                 args = (fuel,
                         oxid,
@@ -202,11 +205,12 @@ class CoalPFLUT(CoalFLUT):
                 else:
                     results.append(run_bs(*args))
                     sL = results[-1]['u'][0]
+                    hMean = results[-1]['hMean'][-1]
                     print(colored('serial: sL is {}'.format(sL), 'magenta'))
-                    for Hnorm in self.Hnorm[1:-1]:
-                        fuel['u'] = (Hnorm+0.1)*sL 
-                        print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
-                        parameters = {'Hnorm': Hnorm,
+                    for velRatio in self.velRatio[:-1]:
+                        fuel['u'] = velRatio*sL 
+                        print(colored('velRatio is {}. u is {}'.format(velRatio,fuel['u']), 'yellow'))
+                        parameters = {'velRatio': velRatio,
                                       'Y': Y, 'Z': Z}
                         args = (fuel,
                                 oxid,
@@ -229,10 +233,10 @@ class CoalPFLUT(CoalFLUT):
                 Y = tmp['Y']
                 Z = tmp['Z']
                 print(colored('parallel: sL is {}, Y is {}, Z is {}'.format(sL,Y,Z), 'magenta'))
-                for Hnorm in self.Hnorm[1:-1]:
-                    fuel['u'] = (Hnorm+0.1)*sL 
-                    print(colored('Hnorm is {}. u is {}'.format(Hnorm,fuel['u']), 'yellow'))
-                    parameters = {'Hnorm': Hnorm,
+                for velRatio in self.velRatio[:-1]:
+                    fuel['u'] = velRatio*sL 
+                    print(colored('velRatio is {}. u is {}'.format(velRatio,fuel['u']), 'yellow'))
+                    parameters = {'velRatio': velRatio,
                                   'Y': Y, 'Z': Z}
                     args = (fuel,
                             oxid,
