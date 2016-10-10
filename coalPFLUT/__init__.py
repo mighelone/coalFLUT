@@ -14,6 +14,8 @@ import glob
 import os
 import yaml
 
+from collections import *
+
 def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, species,
              key_names, basename='res', rerun=True):
     """
@@ -108,7 +110,6 @@ class CoalPFLUT(CoalFLUT):
             **input_dict['flut']['Z'])
         self.VelRatio = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['VelRatio'])
-        self.deltaT = input_dict['flut']['Hnorm']['deltaT']
 
     def assemble_data(self, results):
         '''
@@ -133,6 +134,7 @@ class CoalPFLUT(CoalFLUT):
                            input_var=r.input_variables,
                            data=r.data[1:],
                            variables=r.variables)
+                
         # interpolate existing solutions to the new grid
         [r.convert_to_new_grid(variable='X', new_grid=X_new)
          for r in results]
@@ -142,6 +144,11 @@ class CoalPFLUT(CoalFLUT):
         for var, val in self.input_dict.items():
             self.__log.debug('%s defined from %s to %s with % points',
                              var, val[0], val[-1], len(val))
+        idx  = self.input_variable_index('VelRatio')
+        hMin = self['hMean'].min(axis=idx,keepdims=True)    
+        hMax = self['hMean'].max(axis=idx,keepdims=True)    
+        self['Hnorm'] = (self['hMean']-hMin)/(hMax-hMin)
+        self=self.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True)
 
     def calc_progress_variable(self, definition_dict=None):
         '''
@@ -187,8 +194,10 @@ class CoalPFLUT(CoalFLUT):
                 #run freely propagating for Hnorm = 1
                 VelRatio = 1.0
                 fuel['u'] = 0.01
-                parameters = {'VelRatio': VelRatio,
-                              'Y': Y, 'Z': Z}
+                parameters = OrderedDict()
+                parameters['Y'] = Y
+                parameters['Z'] = Z
+                parameters['VelRatio'] = VelRatio
                 args = (fuel,
                         oxid,
                         parameters,
@@ -210,8 +219,10 @@ class CoalPFLUT(CoalFLUT):
                     for VelRatio in self.VelRatio[:-1]:
                         fuel['u'] = VelRatio*sL 
                         print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
-                        parameters = {'VelRatio': VelRatio,
-                                      'Y': Y, 'Z': Z}
+                        parameters = OrderedDict()
+                        parameters['Y'] = Y
+                        parameters['Z'] = Z
+                        parameters['VelRatio'] = VelRatio
                         args = (fuel,
                                 oxid,
                                 parameters,
@@ -236,8 +247,10 @@ class CoalPFLUT(CoalFLUT):
                 for VelRatio in self.VelRatio[:-1]:
                     fuel['u'] = VelRatio*sL 
                     print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
-                    parameters = {'VelRatio': VelRatio,
-                                  'Y': Y, 'Z': Z}
+                    parameters = OrderedDict()
+                    parameters['Y'] = Y
+                    parameters['Z'] = Z
+                    parameters['VelRatio'] = VelRatio
                     args = (fuel,
                             oxid,
                             parameters,
