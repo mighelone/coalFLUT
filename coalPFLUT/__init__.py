@@ -147,8 +147,13 @@ class CoalPFLUT(CoalFLUT):
         idx  = self.input_variable_index('VelRatio')
         hMin = self['hMean'].min(axis=idx,keepdims=True)    
         hMax = self['hMean'].max(axis=idx,keepdims=True)    
+        self['hMin']=self['T']
+        self['hMin']=hMin
+
+        self['hMax']=self['T']
+        self['hMax']=hMax
         self['Hnorm'] = (self['hMean']-hMin)/(hMax-hMin)
-        self=self.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True)
+        #self=self.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True)
 
     def calc_progress_variable(self, definition_dict=None):
         '''

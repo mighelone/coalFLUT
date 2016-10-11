@@ -82,11 +82,17 @@ if __name__ == "__main__":
         flut.write_bin(flut_file)
     else:
         logging.debug('Don\'t write h5 file')
-
+    if argument.pflut: 
+        flut_mapped=flut.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
+        flut_mapped.write_bin("flut_mapped.h5")
     # process table
     if not argument.run_only:
-        flut_cc = flut.convert_cc_to_uniform_grid(
-            n_points=101, n_proc=n_p, verbose=True)
+        if not argument.pflut: 
+            flut_cc = flut.convert_cc_to_uniform_grid(
+                n_points=101, n_proc=n_p, verbose=True)
+        else:
+            flut_cc = flut_mapped.convert_cc_to_uniform_grid(
+                n_points=101, n_proc=n_p, verbose=True)
         logging.debug('Map zstoich to cc\n%s', flut_cc)
 
         flut_cc.write_bin('coalFLUT-cc.h5')

@@ -43,6 +43,52 @@ class Coal1D(pyFLUT.Flame1D):
         self['Zstar'] = (self['Zsum'] *
                          (self['Y'] + (1 - self['Y']) * (1 + flut.alphac)))
 
+    def calc_Hnorm_premix(self, flut):
+        """
+        Calculate the normalized enthalpy levels for a coal1D solution
+
+        Parameters
+        ----------
+        flut: pyFLUT.Flut
+        Lookup table. It has to be defined with Z and Y
+        """
+        Hc, Ho, Hv = (getattr(flut, stream)['H'][:, np.newaxis]
+                      for stream in ('chargases', 'oxidizer',
+                                     'volatiles'))
+        self.Ho = Ho
+        self.Hv = Hv
+        self.Hc = Hc
+
+        Y = self['Y']
+        Z = self['Zsum']
+        Hf = (Y * Hv + (1 - Y) * (1 + flut.alphac) * Hc)
+
+        # min and max enthalpy
+        H = Ho * (1 - Z) + Hf * Z
+
+        self.calc_Zstar(flut)
+        X = self['X']
+        points = np.empty((len(X), len(flut.input_dict)))
+        for i, inp_var in enumerate(flut.input_variables):
+            if inp_var == 'cc':
+                self.__log.debug('Set %s=0 to index %s', inp_var, i)
+                points[:, i] = 0
+            elif inp_var == 'Z':
+                self.__log.debug('Set Zstar / %s to index %s', inp_var, i)
+                points[:, i] = self['Zstar']
+            elif inp_var == 'Hnorm':
+                self.__log.debug('Set %s=0 to index %s', inp_var, i)
+                points[:, i] = 0
+            else:
+                self.__log.debug('Set %s to index %s', inp_var, i)
+                points[:, i] = self[inp_var]
+        self['Hmin'] = flut.getvalue(points, 'hMin')
+        self['Hmax'] = flut.getvalue(points, 'hMax')
+        #self['Hmin'] = H[0]
+        #self['Hmax'] = H[1]
+
+        self['Hnorm'] = (self['hMean'] - self['Hmin']) / (self['Hmax'] - self['Hmin'])
+
     def calc_Hnorm(self, flut):
         """
         Calculate the normalized enthalpy levels for a coal1D solution
