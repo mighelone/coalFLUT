@@ -65,6 +65,7 @@ if __name__ == "__main__":
     else:
         logging.debug('Run ULF')
         flut.run(n_p=argument.n_p)
+        logging.debug('Finished Run ULF')
     logging.debug('Results: %s', flut.__str__())
     flut.squeeze()
     logging.debug('Results after squeezing: %s', flut.__str__())

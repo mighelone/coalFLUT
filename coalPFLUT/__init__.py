@@ -126,15 +126,21 @@ class CoalPFLUT(CoalFLUT):
         # ignore values < 0
         X_new = X_new[X_new>=0.0]
         self.__log.debug('Create X_new with %s points', len(X_new))
+        print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
         numberOfResults=len(results)
+        print("numberOfResults: {}\n".format(numberOfResults))
         for idx in range(0,numberOfResults):
+            #print("Start:\nX[{}]: min {}, max {}\n".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
             r = results[idx]
+            if not r.output_dict.has_key('delta'):
+                results[idx]['deltah'] = 0.0*results[idx]['X']
             if r.data[0][0]<0.0:
                 results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
                            input_var=r.input_variables,
                            data=r.data[1:],
                            variables=r.variables)
                 
+            #print("End:\nX[{}]: min {}, max {}\n".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
         # interpolate existing solutions to the new grid
         [r.convert_to_new_grid(variable='X', new_grid=X_new)
          for r in results]
