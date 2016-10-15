@@ -106,6 +106,8 @@ class CoalPFLUT(CoalFLUT):
         runner = ulf.UlfRun(
             file_input=self.ulf_reference, solver=self.solver)
         runner[self.keys['n_points']] = input_dict['ulf']['points']
+        self.TpatchEnd = input_dict['ulf']['TpatchEnd']
+        runner['T_PATCH_END'] = self.TpatchEnd
         self.Z = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['Z'])
         self.VelRatio = pyFLUT.utilities.read_dict_list(
@@ -118,8 +120,56 @@ class CoalPFLUT(CoalFLUT):
         Parameters
         ----------
         results: list(ulf.UlfData)
-           list of ulf.UlfData solutions with variables ['Hnorm', 'chist', 'Y']
+           list of ulf.UlfData solutions with variables ['Hnorm', 'chist', 'Y'
         '''
+        toRm=[];
+        numberOfResults=len(results)
+        print("numberOfResults: {}\n".format(numberOfResults))
+        for idx in range(0,numberOfResults):
+            #print("Start:\nX[{}]: min {}, max {}".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
+            r = results[idx]
+            T = r['T']
+            if(T[0]>=T[-1]):
+                print("remove case {}: {}".format(idx,r.variables))
+                toRm.append(idx)
+                #del results[idx]
+            if not r.output_dict.has_key('delta'):
+                results[idx]['deltah'] = 0.0*results[idx]['X']
+            #work on fp setups
+            if r.data[0][0]<0.0:
+                #remove first point
+                #results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                #           input_var=r.input_variables,
+                #           data=r.data[1:],
+                #           variables=r.variables)
+                #safe last x val
+                xlast = r['X'][-1]
+                #shift data and remove last point
+                r['X']-=r.data[0][0]
+                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                           input_var=r.input_variables,
+                           data=r.data[r['X']<=xlast],
+                           variables=r.variables)
+                results[idx]['X'][-1]=xlast
+            #work on bs setups
+            else:
+                #safe first x val
+                xfirst = r['X'][0]
+                #safe last x val
+                xlast = r['X'][-1]
+                #shift data and remove first points
+                r['X']-=self.TpatchEnd
+                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                           input_var=r.input_variables,
+                           data=r.data[r['X']>=xfirst],
+                           variables=r.variables)
+                results[idx]['X'][0]=xfirst
+                results[idx]['X'][-1]=xlast
+
+            #print("End:\nX[{}]: min {}, max {}".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
+        #remove entries
+        results = [r for i,r in enumerate(results) if i not in toRm ]
+        
         # create a new X grid -> non uniform X grid
         X_new = np.unique(
             np.sort(np.concatenate([r['X'] for r in results])))
@@ -127,20 +177,6 @@ class CoalPFLUT(CoalFLUT):
         X_new = X_new[X_new>=0.0]
         self.__log.debug('Create X_new with %s points', len(X_new))
         print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
-        numberOfResults=len(results)
-        print("numberOfResults: {}\n".format(numberOfResults))
-        for idx in range(0,numberOfResults):
-            #print("Start:\nX[{}]: min {}, max {}\n".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
-            r = results[idx]
-            if not r.output_dict.has_key('delta'):
-                results[idx]['deltah'] = 0.0*results[idx]['X']
-            if r.data[0][0]<0.0:
-                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
-                           input_var=r.input_variables,
-                           data=r.data[1:],
-                           variables=r.variables)
-                
-            #print("End:\nX[{}]: min {}, max {}\n".format(idx,results[idx]['X'].min(),results[idx]['X'].max()))
         # interpolate existing solutions to the new grid
         [r.convert_to_new_grid(variable='X', new_grid=X_new)
          for r in results]
@@ -150,6 +186,10 @@ class CoalPFLUT(CoalFLUT):
         for var, val in self.input_dict.items():
             self.__log.debug('%s defined from %s to %s with % points',
                              var, val[0], val[-1], len(val))
+        self.calc_Hnorm()    
+
+    def calc_Hnorm(self):
+        self.__log.debug('Calculate Hnorm')
         idx  = self.input_variable_index('VelRatio')
         hMin = self['hMean'].min(axis=idx,keepdims=True)    
         hMax = self['hMean'].max(axis=idx,keepdims=True)    

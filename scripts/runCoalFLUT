@@ -66,9 +66,9 @@ if __name__ == "__main__":
         logging.debug('Run ULF')
         flut.run(n_p=argument.n_p)
         logging.debug('Finished Run ULF')
-    logging.debug('Results: %s', flut.__str__())
+    logging.debug('Results: \n%s', flut.__str__())
     flut.squeeze()
-    logging.debug('Results after squeezing: %s', flut.__str__())
+    logging.debug('Results after squeezing: \n%s', flut.__str__())
 
     # calc progress variable
     logging.debug('Calc progress variable %s', flut.pv_definition)
@@ -83,20 +83,35 @@ if __name__ == "__main__":
         flut.write_bin(flut_file)
     else:
         logging.debug('Don\'t write h5 file')
-    if argument.pflut: 
-        flut_mapped=flut.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
-        flut_mapped.write_bin("flut_mapped.h5")
+
     # process table
     if not argument.run_only:
         if not argument.pflut: 
             flut_cc = flut.convert_cc_to_uniform_grid(
                 n_points=101, n_proc=n_p, verbose=True)
+            flut_cc.write_bin('coalFLUT-cc.h5')
         else:
-            flut_cc = flut_mapped.convert_cc_to_uniform_grid(
+            logging.debug('Convert flut cc')
+            flut_cc = flut.convert_cc_to_uniform_grid(
                 n_points=101, n_proc=n_p, verbose=True)
+            flut_cc.calc_Hnorm()
+            logging.debug('flut_cc: \n%s', flut_cc.__str__())
+            flut_cc.write_bin("flut_cc.h5")
+            logging.debug('Convert flut Hnorm')
+            flut_mapped=flut.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
+            logging.debug('flut_mapped: \n%s', flut_mapped.__str__())
+            flut_mapped.write_bin("flut_mapped.h5")
+            logging.debug('Convert cc-flut Hnorm')
+            flut_cc_mapped=flut_cc.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
+            logging.debug('flut_cc_mapped: \n%s', flut_cc_mapped.__str__())
+            flut_cc_mapped.write_bin("flut_cc_mapped.h5")
+            logging.debug('Convert Hnorm-flut cc')
+            flut_mapped_cc=flut_mapped.convert_cc_to_uniform_grid(
+                n_points=101, n_proc=n_p, verbose=True)
+            logging.debug('flut_mapped_cc: \n%s', flut_cc_mapped.__str__())
+            flut_mapped_cc.write_bin("flut_mapped_cc.h5")
         logging.debug('Map zstoich to cc\n%s', flut_cc)
 
-        flut_cc.write_bin('coalFLUT-cc.h5')
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
