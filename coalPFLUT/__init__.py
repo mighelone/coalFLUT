@@ -318,3 +318,21 @@ class CoalPFLUT(CoalFLUT):
             results = [r.get() for r in res_async]
 
         self.assemble_data(results)
+    def write_hdf5(self, file_name='FLUT.h5', turbulent=False, n_proc=1):
+        output_variables = list(set(self.export_variables +
+                                    self.gas.species_names))
+
+        self.__log.debug('out variables: %s', output_variables)
+        print('shape: {}'.format(self._data.shape))
+        shape = list(self._data.shape)[:-1]
+        return super(pyFLUT.ulf.dflut.DFLUT_2stream, self).write_hdf5(file_name=file_name,
+                                                     cantera_file=self.mechanism,
+                                                     regular_grid=True,
+                                                     shape=tuple(shape),
+                                                     output_variables=output_variables,
+                                                     turbulent=turbulent,
+                                                     n_var=len(
+                                                         self.varZ),
+                                                     solver=self.output_solver,
+                                                     n_proc=n_proc,
+                                                     verbose=True)

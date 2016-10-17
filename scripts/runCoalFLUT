@@ -99,6 +99,7 @@ if __name__ == "__main__":
             flut_cc.write_bin("flut_cc.h5")
             logging.debug('Convert flut Hnorm')
             flut_mapped=flut.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
+            flut_mapped.calc_progress_variable()
             logging.debug('flut_mapped: \n%s', flut_mapped.__str__())
             flut_mapped.write_bin("flut_mapped.h5")
             logging.debug('Convert cc-flut Hnorm')
@@ -115,5 +116,9 @@ if __name__ == "__main__":
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
-            flut.write_hdf5(file_name=flamelet_config,
+            if not argument.pflut: 
+                flut.write_hdf5(file_name=flamelet_config,
+                            turbulent=argument.turbulent, n_proc=n_p)
+            else:
+                flut_mapped.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
