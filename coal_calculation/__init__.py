@@ -32,7 +32,7 @@ class Coal1D(pyFLUT.Flame1D):
             input_var='X')
         # calc Z and Y
         Z = self['Z'] + self['ZCfix']
-        Y = np.zeros_like(Z)
+        Y = np.zeros_like(Z) + 1.
         cond = Z > 0
         Y[cond] = self['Z'][cond] / Z[cond]
 
