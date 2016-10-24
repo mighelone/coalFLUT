@@ -64,7 +64,7 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
     runner['Z_VALUE'] = parameters['Z']
     runner['TFIX'] = fuel['T']+20.0
     runner['SL_GUESS'] = fuel['u']
-    print("SL_GUESS is {},{}, case: {}".format(fuel['u'], runner['SL_GUESS'],out_file))
+    print("SL_GUESS is {}, case: {}".format(fuel['u'], out_file))
     pyFLUT.utilities.set_species(runner, fuel, oxidizer, species)
     if not rerun and os.path.exists(out_file):
         print(colored('Read existing file {}'.format(out_file), 'blue'))
