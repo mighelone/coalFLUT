@@ -90,6 +90,18 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
 
     return res
 
+def calc_Hnorm(self):
+    print ('Calculate Hnorm')
+    idx  = self.input_variable_index('VelRatio')
+    hMin = self['hMean'].min(axis=idx,keepdims=True)    
+    hMax = self['hMean'].max(axis=idx,keepdims=True)    
+    self['hMin']=self['T']
+    self['hMin']=hMin
+
+    self['hMax']=self['T']
+    self['hMax']=hMax
+    self['Hnorm'] = (self['hMean']-hMin)/(hMax-hMin)
+    #self=self.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True)
 
 # New implementation #
 
@@ -113,7 +125,7 @@ class CoalPFLUT(CoalFLUT):
         self.VelRatio = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['VelRatio'])
 
-    def assemble_data(self, results):
+    def assemble_data(self, results,n_p=1):
         '''
         Assemble flame1D ulf files to FLUT
 
@@ -170,36 +182,51 @@ class CoalPFLUT(CoalFLUT):
         #remove entries
         results = [r for i,r in enumerate(results) if i not in toRm ]
         
-        # create a new X grid -> non uniform X grid
-        X_new = np.unique(
-            np.sort(np.concatenate([r['X'] for r in results])))
-        # ignore values < 0
-        X_new = X_new[X_new>=0.0]
-        self.__log.debug('Create X_new with %s points', len(X_new))
-        print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
-        # interpolate existing solutions to the new grid
-        [r.convert_to_new_grid(variable='X', new_grid=X_new)
-         for r in results]
+        Zlist = [r.variables['Z'] for r in results]
+        Z_values = sorted(list(set(Zlist))) 
+        
+        flut_list=[]
+        for Z in Z_values:
+            Zresults = [r for r in results if r.variables['Z']==Z] 
+            # create a new X grid -> non uniform X grid
+            X_new = np.unique(
+                np.sort(np.concatenate([r['X'] for r in Zresults])))
+            # ignore values < 0
+            X_new = X_new[X_new>=0.0]
+            self.__log.debug('Create X_new with %s points', len(X_new))
+            print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
+            # interpolate existing solutions to the new grid
+            [r.convert_to_new_grid(variable='X', new_grid=X_new)
+             for r in results]
+            flutz=pyFLUT.ulf.Flut(
+                input_data=Zresults, key_variable='X', verbose=True)
+            flutz.calc_progress_variable(definition_dict=self.pv_definition, along_variable='X')
+            flutz = flutz.convert_cc_to_uniform_grid(
+                n_points=101, n_proc=n_p, verbose=True)
+            calc_Hnorm(flutz)
+            flutz=flutz.map_variables(from_inp='VelRatio',to_inp='Hnorm',n_points=len(self.Hnorm), n_proc=n_p, verbose=True)
+            flut_list.append(flutz)
+        self.flut_list=flut_list
+        #joined=flut_list[0];
+        #for r in flut_list[1:]:
+        #  joined=pyFLUT.data.join([joined,r],axis='Z');
+        #print("joined 1:",joined)
+        joined=pyFLUT.data.join(flut_list,axis='Z');
+        self.joined=pyFLUT.Flut(data=joined.data,input_dict=joined.input_dict,output_dict=joined.output_dict)
+        self.joined.set_cantera(self.mechanism)
+        self.joined.add_missing_properties(verbose=True)
+        print("joined 2: ", self.joined)
+        self.joined.write_hdf5(file_name="FLUT_joined.h5",
+                            cantera_file=self.mechanism,
+                            regular_grid=False,
+                            verbose=True,
+                            turbulent=False, n_proc=n_p)
         super(pyFLUT.ulf.dflut.DFLUT_2stream, self).__init__(
             input_data=results, key_variable='X', verbose=True)
         self.__log.debug('Create data structure with dimension %s', self.ndim)
         for var, val in self.input_dict.items():
             self.__log.debug('%s defined from %s to %s with % points',
                              var, val[0], val[-1], len(val))
-        self.calc_Hnorm()    
-
-    def calc_Hnorm(self):
-        self.__log.debug('Calculate Hnorm')
-        idx  = self.input_variable_index('VelRatio')
-        hMin = self['hMean'].min(axis=idx,keepdims=True)    
-        hMax = self['hMean'].max(axis=idx,keepdims=True)    
-        self['hMin']=self['T']
-        self['hMin']=hMin
-
-        self['hMax']=self['T']
-        self['hMax']=hMax
-        self['Hnorm'] = (self['hMean']-hMin)/(hMax-hMin)
-        #self=self.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True)
 
     def calc_progress_variable(self, definition_dict=None):
         '''
@@ -317,7 +344,7 @@ class CoalPFLUT(CoalFLUT):
 
             results = [r.get() for r in res_async]
 
-        self.assemble_data(results)
+        self.assemble_data(results, n_p=n_p)
     def write_hdf5(self, file_name='FLUT.h5', turbulent=False, n_proc=1):
         output_variables = list(set(self.export_variables +
                                     self.gas.species_names))

@@ -94,7 +94,7 @@ if __name__ == "__main__":
             logging.debug('Convert flut cc')
             flut_cc = flut.convert_cc_to_uniform_grid(
                 n_points=101, n_proc=n_p, verbose=True)
-            flut_cc.calc_Hnorm()
+            calc_Hnorm(flut_cc)
             logging.debug('flut_cc: \n%s', flut_cc.__str__())
             flut_cc.write_bin("flut_cc.h5")
             logging.debug('Convert flut Hnorm')
