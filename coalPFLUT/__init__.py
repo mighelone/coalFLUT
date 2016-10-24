@@ -200,6 +200,7 @@ class CoalPFLUT(CoalFLUT):
              for r in results]
             flutz=pyFLUT.ulf.Flut(
                 input_data=Zresults, key_variable='X', verbose=True)
+            flutz.set_cantera(self.mechanism)
             flutz.calc_progress_variable(definition_dict=self.pv_definition, along_variable='X')
             flutz = flutz.convert_cc_to_uniform_grid(
                 n_points=101, n_proc=n_p, verbose=True)
@@ -216,6 +217,7 @@ class CoalPFLUT(CoalFLUT):
         self.joined.set_cantera(self.mechanism)
         self.joined.add_missing_properties(verbose=True)
         print("joined 2: ", self.joined)
+        self.joined.write_bin("joined.h5")
         self.joined.write_hdf5(file_name="FLUT_joined.h5",
                             cantera_file=self.mechanism,
                             regular_grid=False,
