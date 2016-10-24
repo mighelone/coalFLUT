@@ -233,14 +233,14 @@ class CoalPFLUT(CoalFLUT):
             self.__log.debug('%s defined from %s to %s with % points',
                              var, val[0], val[-1], len(val))
 
-    def calc_progress_variable(self, definition_dict=None):
+    def calc_progress_variable(self, definition_dict=None,along_variable='X'):
         '''
         Calculate progress variable. PV is defined in input_dict
         '''
         if not definition_dict:
             definition_dict = self.pv_definition
         super(pyFLUT.ulf.dflut.DFLUT_2stream, self).calc_progress_variable(
-            definition_dict=definition_dict, along_variable='X')
+            definition_dict=definition_dict, along_variable=along_variable)
 
     def run(self, n_p=1):
         """

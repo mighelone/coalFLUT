@@ -141,8 +141,10 @@ class Coal1D(pyFLUT.Flame1D):
             X, points, scl arrays
         """
         if 'Hnorm' not in self:
+            print("Hnorm not in self")
             self.calc_Hnorm(flut)
         if 'Zstar' not in self:
+            print("Zstar not in self")
             self.calc_Zstar(flut)
         X = self['X']
         points = np.empty((len(X), len(flut.input_dict)))
@@ -158,6 +160,8 @@ class Coal1D(pyFLUT.Flame1D):
                 points[:, i] = self[inp_var]
         yc_max = flut.getvalue(points, 'yc_max')
         yc_min = flut.getvalue(points, 'yc_min')
+        self['yc_max'] = yc_max
+        self['yc_min'] = yc_min
         cc = np.zeros_like(yc_max)
         dyc = yc_max - yc_min
         cond = dyc > 0
