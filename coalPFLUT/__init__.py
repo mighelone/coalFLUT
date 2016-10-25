@@ -219,7 +219,7 @@ class CoalPFLUT(CoalFLUT):
         self.joined.add_missing_properties(verbose=True)
         print("joined 2: ", self.joined)
         self.joined.write_bin("joined.h5")
-        output_variables = list(set(self.export_variables+self.gas.species_name))
+        output_variables = list(set(self.export_variables+self.gas.species_names))
         self.joined.write_hdf5(file_name="FLUT_joined.h5"
                             ,cantera_file=self.mechanism
                             ,regular_grid=False
