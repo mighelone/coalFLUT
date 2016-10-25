@@ -219,11 +219,13 @@ class CoalPFLUT(CoalFLUT):
         self.joined.add_missing_properties(verbose=True)
         print("joined 2: ", self.joined)
         self.joined.write_bin("joined.h5")
-        self.joined.write_hdf5(file_name="FLUT_joined.h5",
-                            cantera_file=self.mechanism,
-                            regular_grid=False,
-                            verbose=True,
-                            turbulent=False, n_proc=n_p)
+        output_variables = list(set(self.export_variables+self.gas.species_name))
+        self.joined.write_hdf5(file_name="FLUT_joined.h5"
+                            ,cantera_file=self.mechanism
+                            ,regular_grid=False
+                            ,verbose=True
+                            ,output_variables = output_variables
+                            ,turbulent=False, n_proc=n_p)
         super(pyFLUT.ulf.dflut.DFLUT_2stream, self).__init__(
             input_data=results, key_variable='X', verbose=True)
         self.__log.debug('Create data structure with dimension %s', self.ndim)
