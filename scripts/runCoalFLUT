@@ -70,9 +70,10 @@ if __name__ == "__main__":
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
-    # calc progress variable
-    logging.debug('Calc progress variable %s', flut.pv_definition)
-    flut.calc_progress_variable()
+    if not argument.pflut: 
+        # calc progress variable
+        logging.debug('Calc progress variable %s', flut.pv_definition)
+        flut.calc_progress_variable()
     logging.debug('Calc Le_yc')
     if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
         flut.calc_Le_yc(along='Z')
@@ -90,28 +91,6 @@ if __name__ == "__main__":
             flut_cc = flut.convert_cc_to_uniform_grid(
                 n_points=101, n_proc=n_p, verbose=True)
             flut_cc.write_bin('coalFLUT-cc.h5')
-        else:
-            logging.debug('Convert flut cc')
-            flut_cc = flut.convert_cc_to_uniform_grid(
-                n_points=101, n_proc=n_p, verbose=True)
-            calc_Hnorm(flut_cc)
-            logging.debug('flut_cc: \n%s', flut_cc.__str__())
-            flut_cc.write_bin("flut_cc.h5")
-            logging.debug('Convert flut Hnorm')
-            flut_mapped=flut.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
-            flut_mapped.calc_progress_variable()
-            logging.debug('flut_mapped: \n%s', flut_mapped.__str__())
-            flut_mapped.write_bin("flut_mapped.h5")
-            logging.debug('Convert cc-flut Hnorm')
-            flut_cc_mapped=flut_cc.map_variables(from_inp='VelRatio',to_inp='Hnorm',verbose=True,n_proc=n_p)
-            logging.debug('flut_cc_mapped: \n%s', flut_cc_mapped.__str__())
-            flut_cc_mapped.write_bin("flut_cc_mapped.h5")
-            logging.debug('Convert Hnorm-flut cc')
-            flut_mapped_cc=flut_mapped.convert_cc_to_uniform_grid(
-                n_points=101, n_proc=n_p, verbose=True)
-            logging.debug('flut_mapped_cc: \n%s', flut_cc_mapped.__str__())
-            flut_mapped_cc.write_bin("flut_mapped_cc.h5")
-        logging.debug('Map zstoich to cc\n%s', flut_cc)
 
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
@@ -120,5 +99,10 @@ if __name__ == "__main__":
                 flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
             else:
-                flut_mapped.write_hdf5(file_name=flamelet_config,
-                            turbulent=argument.turbulent, n_proc=n_p)
+                output_variables = list(set(flut.export_variables+flut.gas.species_names))
+                flut.joined.write_hdf5(file_name=flamelet_config
+                                    ,cantera_file=flut.mechanism
+                                    ,regular_grid=False
+                                    ,verbose=True
+                                    ,output_variables = output_variables
+                                    ,turbulent=False, n_proc=n_p)

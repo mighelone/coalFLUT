@@ -189,24 +189,34 @@ class CoalPFLUT(CoalFLUT):
         flut_list=[]
         for Z in Z_values:
             Zresults = [r for r in results if r.variables['Z']==Z] 
-            # create a new X grid -> non uniform X grid
-            X_new = np.unique(
-                np.sort(np.concatenate([r['X'] for r in Zresults])))
-            # ignore values < 0
-            X_new = X_new[X_new>=0.0]
-            self.__log.debug('Create X_new with %s points', len(X_new))
-            print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
-            # interpolate existing solutions to the new grid
-            [r.convert_to_new_grid(variable='X', new_grid=X_new)
-             for r in results]
-            flutz=pyFLUT.ulf.Flut(
-                input_data=Zresults, key_variable='X', verbose=True)
-            flutz.set_cantera(self.mechanism)
-            flutz.calc_progress_variable(definition_dict=self.pv_definition, along_variable='X')
-            flutz = flutz.convert_cc_to_uniform_grid(
-                n_points=101, n_proc=n_p, verbose=True)
-            calc_Hnorm(flutz)
-            flutz=flutz.map_variables(from_inp='VelRatio',to_inp='Hnorm',n_points=len(self.Hnorm), n_proc=n_p, verbose=True)
+            self.Zresults=Zresults
+            Ylist = [r.variables['Y'] for r in Zresults]
+            Y_values = sorted(list(set(Ylist))) 
+            flut_ylist=[]
+            for Y in Y_values:
+                Yresults = [r for r in Zresults if r.variables['Y']==Y] 
+                self.Yresults=Yresults
+                # create a new X grid -> non uniform X grid
+                X_new = np.unique(
+                    np.sort(np.concatenate([r['X'] for r in Yresults])))
+                # ignore values < 0
+                X_new = X_new[X_new>=0.0]
+                self.__log.debug('Create X_new with %s points', len(X_new))
+                print("Xnew: min {}, max {}\n".format(X_new.min(),X_new.max()))
+                # interpolate existing solutions to the new grid
+                [r.convert_to_new_grid(variable='X', new_grid=X_new)
+                 for r in Yresults]
+                fluty=pyFLUT.ulf.Flut(
+                    input_data=Yresults, key_variable='X', verbose=True)
+                fluty.set_cantera(self.mechanism)
+                fluty.calc_progress_variable(definition_dict=self.pv_definition, along_variable='X')
+                fluty = fluty.convert_cc_to_uniform_grid(
+                    n_points=101, n_proc=n_p, verbose=True)
+                calc_Hnorm(fluty)
+                fluty=fluty.map_variables(from_inp='VelRatio',to_inp='Hnorm',n_points=len(self.Hnorm), n_proc=n_p, verbose=True)
+                flut_ylist.append(fluty)
+            self.flut_ylist=flut_ylist
+            flutz=pyFLUT.data.join(flut_ylist,axis='Y');
             flut_list.append(flutz)
         self.flut_list=flut_list
         #joined=flut_list[0];
@@ -218,16 +228,16 @@ class CoalPFLUT(CoalFLUT):
         self.joined.set_cantera(self.mechanism)
         self.joined.add_missing_properties(verbose=True)
         print("joined 2: ", self.joined)
-        self.joined.write_bin("joined.h5")
-        output_variables = list(set(self.export_variables+self.gas.species_names))
-        self.joined.write_hdf5(file_name="FLUT_joined.h5"
-                            ,cantera_file=self.mechanism
-                            ,regular_grid=False
-                            ,verbose=True
-                            ,output_variables = output_variables
-                            ,turbulent=False, n_proc=n_p)
+        #self.joined.write_bin("joined.h5")
+        #output_variables = list(set(self.export_variables+self.gas.species_names))
+        #self.joined.write_hdf5(file_name="FLUT_joined.h5"
+        #                    ,cantera_file=self.mechanism
+        #                    ,regular_grid=False
+        #                    ,verbose=True
+        #                    ,output_variables = output_variables
+        #                    ,turbulent=False, n_proc=n_p)
         super(pyFLUT.ulf.dflut.DFLUT_2stream, self).__init__(
-            input_data=results, key_variable='X', verbose=True)
+            input_dict=self.joined.input_dict, output_dict=self.joined.output_dict, data=self.joined.data, verbose=True)
         self.__log.debug('Create data structure with dimension %s', self.ndim)
         for var, val in self.input_dict.items():
             self.__log.debug('%s defined from %s to %s with % points',
