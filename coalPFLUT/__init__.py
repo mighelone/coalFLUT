@@ -125,6 +125,12 @@ class CoalPFLUT(CoalFLUT):
             **input_dict['flut']['Z'])
         self.VelRatio = pyFLUT.utilities.read_dict_list(
             **input_dict['flut']['VelRatio'])
+        self.fp_reference = input_dict['ulf']['fpreference']
+        runner_fp = ulf.UlfRun(
+            file_input=self.fp_reference, solver=self.solver)
+        runner_fp[self.keys['mechanism']] = self.mechanism[:-4]
+        runner_fp[self.keys['n_points']] = input_dict['ulf']['points']
+        runner_fp[self.keys['pressure']] = self.pressure
 
     def assemble_data(self, results,n_p=1):
         '''
@@ -295,7 +301,7 @@ class CoalPFLUT(CoalFLUT):
                         oxid.copy(),
                         parameters,
                         self.format,
-                        "fp_setup.ulf",
+                        self.fp_reference,
                         self.solver,
                         self.gas.species_names,
                         self.keys,
