@@ -99,7 +99,7 @@ if __name__ == "__main__":
                 flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
             else:
-                output_variables = list(set(flut.export_variables+flut.gas.species_names))
+                output_variables = list(set(flut.export_variables+flut.gas.species_names+'LePV_1'))
                 flut.joined.write_hdf5(file_name=flamelet_config
                                     ,cantera_file=flut.mechanism
                                     ,regular_grid=False
