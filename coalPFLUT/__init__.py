@@ -131,6 +131,18 @@ class CoalPFLUT(CoalFLUT):
         runner_fp[self.keys['mechanism']] = self.mechanism[:-4]
         runner_fp[self.keys['n_points']] = input_dict['ulf']['points']
         runner_fp[self.keys['pressure']] = self.pressure
+        Le1 = input_dict['ulf'].get('Le1', False)
+        if Le1:
+          runner['LEWIS_UPDATE_TYPE'] = 'constant'
+          runner_fp['LEWIS_UPDATE_TYPE'] = 'constant'
+          runner['GRADIENT_TYPE'] = 'mass'
+          runner_fp['GRADIENT_TYPE'] = 'mass'
+        else:
+          runner['LEWIS_UPDATE_TYPE'] = 'standard'
+          runner_fp['LEWIS_UPDATE_TYPE'] = 'standard'
+          runner['GRADIENT_TYPE'] = 'mole'
+          runner_fp['GRADIENT_TYPE'] = 'mole'
+          
 
     def assemble_data(self, results,n_p=1):
         '''
@@ -233,7 +245,7 @@ class CoalPFLUT(CoalFLUT):
         self.joined=pyFLUT.Flut(data=joined.data,input_dict=joined.input_dict,output_dict=joined.output_dict)
         self.joined.set_cantera(self.mechanism)
         self.joined.add_missing_properties(verbose=True)
-        self.joined.calc_Le_yc(along='Z')
+        #self.joined.calc_Le_yc(along='Z')
         print("joined 2: ", self.joined)
         #self.joined.write_bin("joined.h5")
         #output_variables = list(set(self.export_variables+self.gas.species_names))
