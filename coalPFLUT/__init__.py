@@ -245,7 +245,8 @@ class CoalPFLUT(CoalFLUT):
         self.joined=pyFLUT.Flut(data=joined.data,input_dict=joined.input_dict,output_dict=joined.output_dict)
         self.joined.set_cantera(self.mechanism)
         self.joined.add_missing_properties(verbose=True)
-        #self.joined.calc_Le_yc(along='Z')
+        self.joined.pv_definition=self.pv_definition
+        self.joined.calc_Le_yc(along='Z')
         print("joined 2: ", self.joined)
         #self.joined.write_bin("joined.h5")
         #output_variables = list(set(self.export_variables+self.gas.species_names))
