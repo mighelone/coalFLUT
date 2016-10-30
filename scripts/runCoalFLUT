@@ -74,9 +74,10 @@ if __name__ == "__main__":
         # calc progress variable
         logging.debug('Calc progress variable %s', flut.pv_definition)
         flut.calc_progress_variable()
-    logging.debug('Calc Le_yc')
     if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
+        logging.debug('Calc Le_yc')
         flut.calc_Le_yc(along='Z')
+        flut.export_variables+=['Le_yc']
     logging.debug('Add missing properties')
     flut.add_missing_properties(verbose=True)
     if not argument.hdf5:
@@ -95,14 +96,12 @@ if __name__ == "__main__":
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
-            if not argument.pflut: 
-                flut.write_hdf5(file_name=flamelet_config,
+            flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
-            else:
-                output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
-                flut.joined.write_hdf5(file_name=flamelet_config
-                                    ,cantera_file=flut.mechanism
-                                    ,regular_grid=False
-                                    ,verbose=True
-                                    ,output_variables = output_variables
-                                    ,turbulent=False, n_proc=n_p)
+                #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
+                #flut.joined.write_hdf5(file_name=flamelet_config
+                #                    ,cantera_file=flut.mechanism
+                #                    ,regular_grid=False
+                #                    ,verbose=True
+                #                    ,output_variables = output_variables
+                #                    ,turbulent=False, n_proc=n_p)
