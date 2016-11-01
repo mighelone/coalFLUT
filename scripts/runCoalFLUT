@@ -70,13 +70,15 @@ if __name__ == "__main__":
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
+    along='X'
     if not argument.pflut: 
         # calc progress variable
         logging.debug('Calc progress variable %s', flut.pv_definition)
         flut.calc_progress_variable()
+        along='Z'
     if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
         logging.debug('Calc Le_yc')
-        flut.calc_Le_yc(along='Z')
+        flut.calc_Le_yc(along=along)
         flut.export_variables+=['Le_yc']
     logging.debug('Add missing properties')
     flut.add_missing_properties(verbose=True)
