@@ -70,7 +70,7 @@ if __name__ == "__main__":
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
-    along='X'
+    along='Z'
     if not argument.pflut: 
         # calc progress variable
         logging.debug('Calc progress variable %s', flut.pv_definition)
