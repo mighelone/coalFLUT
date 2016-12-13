@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='coalFLUT',
     version='1.0.0',
-    packages=['coalFLUT', 'coal_calculation'],
+    packages=['coalFLUT', 'coalPFLUT', 'coal_calculation'],
     scripts=['scripts/runCoalFLUT'],
     url='',
     license='',
