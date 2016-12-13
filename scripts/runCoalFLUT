@@ -85,6 +85,7 @@ if __name__ == "__main__":
                 logging.debug('Calc progress variable %s',
                               flut.pv_definition)
                 flut.calc_progress_variable()
+                flut = flut.convert_cc_to_uniform_grid(n_points=len(flut.cc))
             along = 'Z'
         if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
             logging.debug('Calc Le_yc')
