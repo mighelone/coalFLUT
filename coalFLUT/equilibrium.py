@@ -8,27 +8,42 @@ import numpy as np
 from autologging import logged
 import pyFLUT
 
-mapf = map
+mapf = futures.map
 
 
-def get_equilibrium(fuel, oxidizer, variables, P, mechanism, Z, Zmin, Zmax):
+def z_from_phi(phi, zst):
+    """
+    Calculate Z from phi
+    """
+    return zst * phi / (zst * phi + (1 - zst))
+
+
+@logged
+def get_equilibrium(fuel, oxidizer, variables, P, mechanism, Z):
     """
     Estimate equilibrium solution for the given fuel and oxidizer
     """
     eq = pyFLUT.equilibrium.EquilibriumSolution(
         fuel=fuel, oxidizer=oxidizer, pressure=P, mechanism=mechanism,
         Z=Z)
+    Zmin = z_from_phi(0.1, eq.Z_st)
+    Zmax = z_from_phi(5, eq.Z_st)
     eq.calc_equilibrium(Zmin=Zmin, Zmax=Zmax)
+    get_equilibrium._log.debug('var=%s Zmin=%s Zmax=%s, T_fuel=%s - %s',
+                               variables, Zmin, Zmax, eq['T'][-1],
+                               fuel['T'])
     return pyFLUT.Flame1D(data=eq.data, output_dict=eq.output_dict,
                           input_var='Z',
                           variables=variables)
 
 
 @logged
-class CoalFLUTEq(CoalFLUT):
+class CoalFLUTEq(CoalFLUT, pyFLUT.Flut):
     """
     Coal FLUT with equilibrium
     """
+    export_variables = ['T', 'rho', 'p', 'MMean', 'cpMean',
+                        'hMean', 'visc', 'alpha', 'lambda']
 
     def run_scoop(self):
         def fuel_gen():
@@ -50,8 +65,8 @@ class CoalFLUTEq(CoalFLUT):
             for Yi in self.Y:
                 for H in self.Hnorm:
                     oxid = self.oxidizer.copy()
-                    H_oxid = (oxid['H'][1] - oxid['H'][0]) * \
-                        H + oxid['H'][0]
+                    H_oxid = ((oxid['H'][1] - oxid['H'][0]) *
+                              H + oxid['H'][0])
                     oxid['T'] = pyFLUT.utilities.calc_Tf(
                         self.gas, H_oxid, self.pressure, oxid['Y'])
                     self.__log.debug('Toxidizer=%s', oxid['T'])
@@ -68,11 +83,28 @@ class CoalFLUTEq(CoalFLUT):
                 get_equilibrium,
                 P=self.pressure,
                 mechanism=self.mechanism,
-                Z=self.z_points,
-                Zmin=0,
-                Zmax=1),
+                Z=self.z_points),
             fuel_gen(),
             oxid_gen(),
             parameters_gen()))
 
         self.assemble_data(results)
+
+    def write_hdf5(self, file_name='FLUT.h5', turbulent=False,
+                   n_proc=1, verbose=False):
+        output_variables = list(set(self.export_variables +
+                                    self.gas.species_names))
+
+        self.__log.debug('out variables: %s', output_variables)
+
+        return pyFLUT.Flut.write_hdf5(self, file_name=file_name,
+                                      cantera_file=self.mechanism,
+                                      # regular_grid=True,
+                                      # shape=tuple(shape),
+                                      output_variables=output_variables,
+                                      turbulent=turbulent,
+                                      n_var=len(
+                                          self.varZ),
+                                      solver=self.output_solver,
+                                      n_proc=n_proc,
+                                      verbose=True)
