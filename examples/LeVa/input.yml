@@ -67,6 +67,7 @@ ulf:
   reference: flamelet_setup.ulf
   basename: sldf
   format: "{:5.4f}"
+  run_existing: true
 
   keys:
     z_st: ZST

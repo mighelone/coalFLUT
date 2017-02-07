@@ -68,7 +68,7 @@ ulf:
   basename: sldf
   format: "{:5.4f}"
   # if false do not recalculate the existing files
-  rerun: true
+  run_existing: true
 
   keys:
     z_st: ZST

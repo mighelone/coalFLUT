@@ -27,7 +27,7 @@ def get_equilibrium(fuel, oxidizer, variables, P, mechanism, Z):
         fuel=fuel, oxidizer=oxidizer, pressure=P, mechanism=mechanism,
         Z=Z)
     Zmin = z_from_phi(0.1, eq.Z_st)
-    Zmax = z_from_phi(5, eq.Z_st)
+    Zmax = z_from_phi(3, eq.Z_st)
     eq.calc_equilibrium(Zmin=Zmin, Zmax=Zmax)
     get_equilibrium._log.debug('var=%s Zmin=%s Zmax=%s, T_fuel=%s - %s',
                                variables, Zmin, Zmax, eq['T'][-1],
