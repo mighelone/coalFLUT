@@ -58,5 +58,5 @@ if __name__ == '__main__':
     # export to flameletConfig
     logging.info('Export data to FLUT.h5 (flameletConfig)')
     flut.write_hdf5(file_name='FLUT.h5',
-                    turbulent=argument.turbulent, n_proc=1,
-                    verbose=argument.debug)
+                    turbulent=argument.turbulent, n_proc=1)
+    #                verbose=argument.debug)
