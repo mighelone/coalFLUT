@@ -36,16 +36,20 @@ if __name__ == "__main__":
                         default=None, help='Export to flameletConfig')
     parser.add_argument('-t', dest='turbulent', action='store_true',
                         help='Create table for turbulent flows')
+<<<<<<< HEAD
     parser.add_argument('--noquench', dest='noquench',
                         action='store_true',
                         help='Do not include quenched solutions')
 
+=======
     parser.add_argument('-p', dest='pflut', action='store_true',
                         help='Create table based on burner stabilized flames')
+>>>>>>> 16e35cd801473371de7c7afcfb679d54ec61d11e
     argument = parser.parse_args()
 
     n_p = argument.n_p
     flamelet_config = argument.flamelet_config
+<<<<<<< HEAD
 
     loglevel = logging.DEBUG if argument.debug else logging.INFO
 
@@ -53,30 +57,49 @@ if __name__ == "__main__":
         level=loglevel,
         format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
 
-    logging.info('runCoalFLUT use pyFLUT version: %s',
-                 pyFLUT.__version__)
     logging.debug('flamelet_config %s', flamelet_config)
     logging.debug('Initialize flut object')
-    if not argument.pflut:
+    flut = coalFLUT.CoalFLUT(argument.yml)
+    flut_file = flut.basename + '.h5'
+    if argument.readfiles:
+        logging.debug('Read existing files')
+        flut.read_files(argument.noquench)
+=======
+    logger = logging.getLogger('')
+
+    log_level = logging.DEBUG if argument.debug else logging.INFO
+
+    logger.setLevel(log_level)
+
+    logging.info('runCoalFLUT use pyFLUT version: %s', pyFLUT.__version__)
+    logging.debug('flamelet_config %s', flamelet_config)
+    logging.debug('Initialize flut object')
+    if not argument.pflut: 
         flut = coalFLUT.CoalFLUT(argument.yml)
     else:
         flut = coalPFLUT.CoalPFLUT(argument.yml)
     flut_file = flut.basename + '.h5'
     if argument.readfiles:
         logging.debug('Read existing files')
-        flut.read_files(argument.noquench)
+        flut.read_files()
+>>>>>>> 16e35cd801473371de7c7afcfb679d54ec61d11e
     elif argument.hdf5:
         logging.debug('Read previous hdf5 %s', flut_file)
         flut.read_bin(flut_file)
     else:
         logging.debug('Run ULF')
         flut.run(n_p=argument.n_p)
+<<<<<<< HEAD
+    logging.debug('Results: %s', flut.__str__())
+    flut.squeeze()
+    logging.debug('Results after squeezing: %s', flut.__str__())
+=======
         logging.debug('Finished Run ULF')
     logging.debug('Results: \n%s', flut.__str__())
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
-    along='Z'
+    along='X'
     if not argument.pflut: 
         # calc progress variable
         logging.debug('Calc progress variable %s', flut.pv_definition)
@@ -88,6 +111,7 @@ if __name__ == "__main__":
         flut.export_variables+=['Le_yc']
     logging.debug('Add missing properties')
     flut.add_missing_properties(verbose=True)
+>>>>>>> 16e35cd801473371de7c7afcfb679d54ec61d11e
     if not argument.hdf5:
         logging.debug('Write h5 file %s', flut_file)
         flut.write_bin(flut_file)
@@ -96,36 +120,31 @@ if __name__ == "__main__":
 
     # process table
     if not argument.run_only:
-        along = 'X'
-        if not argument.pflut:
-            # calc progress variable
-            if 'cc' not in flut.input_dict:
-                logging.debug('Calc progress variable %s',
-                              flut.pv_definition)
-                flut.calc_progress_variable()
-                flut = flut.convert_cc_to_uniform_grid(n_points=len(flut.cc))
-            along = 'Z'
-        if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
-            logging.debug('Calc Le_yc')
-            flut.calc_Le_yc(along=along)
-            flut.export_variables += ['Le_yc']
+<<<<<<< HEAD
+        # calc progress variable
+        logging.debug('Flut input variables %s', flut.input_variables)
+        if 'cc' not in flut.input_dict:
+            logging.debug('Calc progress variable %s',
+                          flut.pv_definition)
+            flut.calc_progress_variable()
         logging.debug('Add missing properties')
         flut.add_missing_properties(verbose=True)
-        if not argument.hdf5:
-            logging.debug('Write h5 file %s', flut_file)
-            flut.write_bin(flut_file)
-        else:
-            logging.debug('Don\'t write h5 file')
+=======
+        if not argument.pflut: 
+            flut_cc = flut.convert_cc_to_uniform_grid(
+                n_points=101, n_proc=n_p, verbose=True)
+            flut_cc.write_bin('coalFLUT-cc.h5')
 
+>>>>>>> 16e35cd801473371de7c7afcfb679d54ec61d11e
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
             flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
-            #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
-            # flut.joined.write_hdf5(file_name=flamelet_config
-            #                    ,cantera_file=flut.mechanism
-            #                    ,regular_grid=False
-            #                    ,verbose=True
-            #                    ,output_variables = output_variables
-            #                    ,turbulent=False, n_proc=n_p)
+                #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
+                #flut.joined.write_hdf5(file_name=flamelet_config
+                #                    ,cantera_file=flut.mechanism
+                #                    ,regular_grid=False
+                #                    ,verbose=True
+                #                    ,output_variables = output_variables
+                #                    ,turbulent=False, n_proc=n_p)

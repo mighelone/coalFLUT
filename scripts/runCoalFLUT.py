@@ -4,7 +4,6 @@
 import argparse
 import logging
 import coalFLUT
-import coalPFLUT
 import pyFLUT
 
 if __name__ == "__main__":
@@ -15,8 +14,6 @@ if __name__ == "__main__":
     )
     parser.add_argument('yml', action='store',
                         default=None, help="YML input file")
-    parser.add_argument('-n', dest='n_p', action='store',
-                        default=1, type=int, help='Number of processors')
     parser.add_argument('--hdf5', dest='hdf5',
                         action='store_true',
                         help=(
@@ -40,11 +37,8 @@ if __name__ == "__main__":
                         action='store_true',
                         help='Do not include quenched solutions')
 
-    parser.add_argument('-p', dest='pflut', action='store_true',
-                        help='Create table based on burner stabilized flames')
     argument = parser.parse_args()
 
-    n_p = argument.n_p
     flamelet_config = argument.flamelet_config
 
     loglevel = logging.DEBUG if argument.debug else logging.INFO
@@ -57,10 +51,9 @@ if __name__ == "__main__":
                  pyFLUT.__version__)
     logging.debug('flamelet_config %s', flamelet_config)
     logging.debug('Initialize flut object')
-    if not argument.pflut:
-        flut = coalFLUT.CoalFLUT(argument.yml)
-    else:
-        flut = coalPFLUT.CoalPFLUT(argument.yml)
+
+    flut = coalFLUT.CoalFLUT(argument.yml)
+
     flut_file = flut.basename + '.h5'
     if argument.readfiles:
         logging.debug('Read existing files')
@@ -70,40 +63,22 @@ if __name__ == "__main__":
         flut.read_bin(flut_file)
     else:
         logging.debug('Run ULF')
-        flut.run(n_p=argument.n_p)
+        flut.run_scoop()
         logging.debug('Finished Run ULF')
     logging.debug('Results: \n%s', flut.__str__())
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
-    along='Z'
-    if not argument.pflut: 
-        # calc progress variable
-        logging.debug('Calc progress variable %s', flut.pv_definition)
-        flut.calc_progress_variable()
-        along='Z'
-    if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
-        logging.debug('Calc Le_yc')
-        flut.calc_Le_yc(along=along)
-        flut.export_variables+=['Le_yc']
-    logging.debug('Add missing properties')
-    flut.add_missing_properties(verbose=True)
-    if not argument.hdf5:
-        logging.debug('Write h5 file %s', flut_file)
-        flut.write_bin(flut_file)
-    else:
-        logging.debug('Don\'t write h5 file')
-
     # process table
     if not argument.run_only:
         along = 'X'
-        if not argument.pflut:
-            # calc progress variable
-            if 'cc' not in flut.input_dict:
-                logging.debug('Calc progress variable %s',
-                              flut.pv_definition)
-                flut.calc_progress_variable()
-                flut = flut.convert_cc_to_uniform_grid(n_points=len(flut.cc))
+
+        # calc progress variable
+        if 'cc' not in flut.input_dict:
+            logging.debug('Calc progress variable %s',
+                          flut.pv_definition)
+            flut.calc_progress_variable()
+            flut = flut.convert_cc_to_uniform_grid(n_points=len(flut.cc))
             along = 'Z'
         if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
             logging.debug('Calc Le_yc')
@@ -122,10 +97,3 @@ if __name__ == "__main__":
                           flamelet_config)
             flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
-            #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
-            # flut.joined.write_hdf5(file_name=flamelet_config
-            #                    ,cantera_file=flut.mechanism
-            #                    ,regular_grid=False
-            #                    ,verbose=True
-            #                    ,output_variables = output_variables
-            #                    ,turbulent=False, n_proc=n_p)

@@ -30,10 +30,11 @@ flut:
   Z:
     points: 101
   Y:
-    method: list
-    values: [0, 0.5, 1]
-    #method: linspace
-    #values:
+    # method: list
+    # values: [0, 0.5, 1]
+    method: linspace
+    values:
+      [0, 1, 41]
     #  - 0
     #  - 1
     #  - 31
@@ -45,7 +46,7 @@ flut:
 
   Hnorm:
     method: list
-    values: [0, 1]
+    values: [0, 0.5, 1]
 
   pv:
     CO: 1
@@ -67,7 +68,6 @@ ulf:
   reference: flamelet_setup.ulf
   basename: sldf
   format: "{:5.4f}"
-  run_existing: true
 
   keys:
     z_st: ZST

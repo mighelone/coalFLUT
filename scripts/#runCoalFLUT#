@@ -53,11 +53,10 @@ if __name__ == "__main__":
         level=loglevel,
         format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
 
-    logging.info('runCoalFLUT use pyFLUT version: %s',
-                 pyFLUT.__version__)
+    logging.info('runCoalFLUT use pyFLUT version: %s', pyFLUT.__version__)
     logging.debug('flamelet_config %s', flamelet_config)
     logging.debug('Initialize flut object')
-    if not argument.pflut:
+    if not argument.pflut: 
         flut = coalFLUT.CoalFLUT(argument.yml)
     else:
         flut = coalPFLUT.CoalPFLUT(argument.yml)
@@ -76,8 +75,8 @@ if __name__ == "__main__":
     flut.squeeze()
     logging.debug('Results after squeezing: \n%s', flut.__str__())
 
-    along='Z'
-    if not argument.pflut: 
+    along='X'
+    if cc not in flut.input_dict: 
         # calc progress variable
         logging.debug('Calc progress variable %s', flut.pv_definition)
         flut.calc_progress_variable()
@@ -96,36 +95,23 @@ if __name__ == "__main__":
 
     # process table
     if not argument.run_only:
-        along = 'X'
-        if not argument.pflut:
-            # calc progress variable
-            if 'cc' not in flut.input_dict:
-                logging.debug('Calc progress variable %s',
-                              flut.pv_definition)
-                flut.calc_progress_variable()
-                flut = flut.convert_cc_to_uniform_grid(n_points=len(flut.cc))
-            along = 'Z'
-        if all('Le_{}'.format(sp) in flut for sp in flut.pv_definition):
-            logging.debug('Calc Le_yc')
-            flut.calc_Le_yc(along=along)
-            flut.export_variables += ['Le_yc']
+        # calc progress variable
+        logging.debug('Flut input variables %s', flut.input_variables)
+        if 'cc' not in flut.input_dict:
+            logging.debug('Calc progress variable %s',
+                          flut.pv_definition)
+            flut.calc_progress_variable()
         logging.debug('Add missing properties')
         flut.add_missing_properties(verbose=True)
-        if not argument.hdf5:
-            logging.debug('Write h5 file %s', flut_file)
-            flut.write_bin(flut_file)
-        else:
-            logging.debug('Don\'t write h5 file')
-
         if flamelet_config:
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
             flut.write_hdf5(file_name=flamelet_config,
                             turbulent=argument.turbulent, n_proc=n_p)
-            #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
-            # flut.joined.write_hdf5(file_name=flamelet_config
-            #                    ,cantera_file=flut.mechanism
-            #                    ,regular_grid=False
-            #                    ,verbose=True
-            #                    ,output_variables = output_variables
-            #                    ,turbulent=False, n_proc=n_p)
+                #output_variables = list(set(flut.export_variables+flut.gas.species_names+['Le_yc']))
+                #flut.joined.write_hdf5(file_name=flamelet_config
+                #                    ,cantera_file=flut.mechanism
+                #                    ,regular_grid=False
+                #                    ,verbose=True
+                #                    ,output_variables = output_variables
+                #                    ,turbulent=False, n_proc=n_p)

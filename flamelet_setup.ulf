@@ -50,7 +50,7 @@
 // definition of scalar dissipation rate
 // ... erfc profile
 #define CHI_FROM_ERFC chi;
-#define ZST 0.0551660728268;
+#define ZST 0.05516607282679645;
 #define CHIST 1.0;
 // ... read from file
 #define CHI_FROM_FILE off;
