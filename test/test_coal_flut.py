@@ -99,7 +99,7 @@ def run(fuel, oxidizer, parameters, par_format, ulf_reference, solver,
                           variables=parameters)
 
 
-@mock.patch('coalFLUT.pyFLUT.ulf.dflut.run_sldf', side_effect=run)
+@mock.patch('coalFLUT.flut.pyFLUT.ulf.dflut.run_sldf', side_effect=run)
 def test_run(mocked_run_sldf, flut):
     # p = {'Y': 0.1, 'Hnorm': 0.5, 'chist': 0.1}
     # res = coalFLUT.pyFLUT.ulf.dflut.run_sldf(fuel=None,
