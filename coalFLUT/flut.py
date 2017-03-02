@@ -5,7 +5,7 @@ import pyFLUT.ulf.dflut
 import numpy as np
 
 from pyFLUT.ulf.dflut import run_sldf
-from scoop import futures
+# from scoop import futures
 import functools
 from autologging import logged
 import h5py
@@ -96,66 +96,66 @@ class CoalFLUT(pyFLUT.ulf.dflut.DFLUT_2stream):
         self.chargases = pyFLUT.utilities.fix_composition_T(
             chargases, self.gas)
 
-    def run_scoop(self):
-        """
-        Run in parallel using scoop
-        """
-        def fuel_gen(Y, Hnorm, chist):
-            for Yi in Y:
-                for H in Hnorm:
-                    for chi in chist:
-                        mix = self.mix_streams(Yi)
-                        self.__log.debug(
-                            'Y=%s H_mix=%s', Y, mix['H'])
-                        fuel = mix.copy()
-                        H_fuel = ((mix['H'][1] - mix['H'][0]) *
-                                  H + mix['H'][0])
-                        self.__log.debug('Y=%s Hnorm=%s', Y, Hnorm)
-                        fuel['T'] = pyFLUT.utilities.calc_Tf(
-                            self.gas, H_fuel, self.pressure, mix['Y'])
-                        self.__log.debug('Tf=%s', fuel['T'])
-                        yield fuel
+    # def run_scoop(self):
+    #     """
+    #     Run in parallel using scoop
+    #     """
+    #     def fuel_gen(Y, Hnorm, chist):
+    #         for Yi in Y:
+    #             for H in Hnorm:
+    #                 for chi in chist:
+    #                     mix = self.mix_streams(Yi)
+    #                     self.__log.debug(
+    #                         'Y=%s H_mix=%s', Y, mix['H'])
+    #                     fuel = mix.copy()
+    #                     H_fuel = ((mix['H'][1] - mix['H'][0]) *
+    #                               H + mix['H'][0])
+    #                     self.__log.debug('Y=%s Hnorm=%s', Y, Hnorm)
+    #                     fuel['T'] = pyFLUT.utilities.calc_Tf(
+    #                         self.gas, H_fuel, self.pressure, mix['Y'])
+    #                     self.__log.debug('Tf=%s', fuel['T'])
+    #                     yield fuel
 
-        def oxid_gen(Y, Hnorm, chist):
-            for Yi in Y:
-                for H in Hnorm:
-                    for chi in chist:
-                        oxid = self.oxidizer.copy()
-                        H_oxid = (oxid['H'][1] - oxid['H'][0]) * \
-                            H + oxid['H'][0]
-                        oxid['T'] = pyFLUT.utilities.calc_Tf(
-                            self.gas, H_oxid, self.pressure, oxid['Y'])
-                        self.__log.debug('Toxidizer=%s', oxid['T'])
-                        yield oxid
+    #     def oxid_gen(Y, Hnorm, chist):
+    #         for Yi in Y:
+    #             for H in Hnorm:
+    #                 for chi in chist:
+    #                     oxid = self.oxidizer.copy()
+    #                     H_oxid = (oxid['H'][1] - oxid['H'][0]) * \
+    #                         H + oxid['H'][0]
+    #                     oxid['T'] = pyFLUT.utilities.calc_Tf(
+    #                         self.gas, H_oxid, self.pressure, oxid['Y'])
+    #                     self.__log.debug('Toxidizer=%s', oxid['T'])
+    #                     yield oxid
 
-        def parameters_gen(Y, Hnorm, chist):
-            for Yi in Y:
-                for H in Hnorm:
-                    for chi in chist:
-                        yield {'Hnorm': H, 'Y': Yi, 'chist': chi}
+    #     def parameters_gen(Y, Hnorm, chist):
+    #         for Yi in Y:
+    #             for H in Hnorm:
+    #                 for chi in chist:
+    #                     yield {'Hnorm': H, 'Y': Yi, 'chist': chi}
 
-        fuel = fuel_gen(self.Y, self.Hnorm, self.chist)
-        self.__log.debug('Create fuel generator')
-        oxid = oxid_gen(self.Y, self.Hnorm, self.chist)
-        self.__log.debug('Create oxid generator')
-        parameters = parameters_gen(self.Y, self.Hnorm, self.chist)
-        self.__log.debug('Create parameters generator')
-        results = list(
-            futures.map(functools.partial(
-                run_sldf,
-                par_format=self.format,
-                ulf_reference=self.ulf_reference,
-                solver=self.solver,
-                species=self.gas.species_names,
-                key_names=self.keys,
-                basename=self.basename,
-                rerun=self.rerun),
-                fuel,
-                oxid,
-                parameters)
-        )
+    #     fuel = fuel_gen(self.Y, self.Hnorm, self.chist)
+    #     self.__log.debug('Create fuel generator')
+    #     oxid = oxid_gen(self.Y, self.Hnorm, self.chist)
+    #     self.__log.debug('Create oxid generator')
+    #     parameters = parameters_gen(self.Y, self.Hnorm, self.chist)
+    #     self.__log.debug('Create parameters generator')
+    #     results = list(
+    #         futures.map(functools.partial(
+    #             run_sldf,
+    #             par_format=self.format,
+    #             ulf_reference=self.ulf_reference,
+    #             solver=self.solver,
+    #             species=self.gas.species_names,
+    #             key_names=self.keys,
+    #             basename=self.basename,
+    #             rerun=self.rerun),
+    #             fuel,
+    #             oxid,
+    #             parameters)
+    #     )
 
-        self.assemble_data(results)
+    #     self.assemble_data(results)
 
     def write_hdf5(self, file_name='FLUT.h5', turbulent=False,
                    n_proc=1):
