@@ -63,11 +63,14 @@ flut:
     
 ulf:
   # solver: /shared_home/vascella/Codes/ulf/build_git2/ulf.x
-  solver: /home/vascella/Codes/ulf/build/ulf.x
+  # solver: /home/vascella/Codes/ulf/build/ulf.x
+  # this is just a dummy name for testing
+  solver: ulf.x
   reference: flamelet_setup.ulf
   basename: sldf
   format: "{:5.4f}"
-  run_existing: false
+  # if false do not recalculate the existing files
+  run_existing: true
 
   keys:
     z_st: ZST

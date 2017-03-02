@@ -4,7 +4,9 @@ import numpy as np
 import mock
 import pyFLUT
 
-input_yml = 'examples/Le1/input.yml'
+# input_yml = 'examples/Le1/input.yml'
+# input_yml = 'test/input.yml'
+input_yml = 'input.yml'
 
 
 @pytest.fixture
@@ -82,7 +84,7 @@ def test_mixfuel_Y(flut):
 
 
 def run(fuel, oxidizer, parameters, par_format, ulf_reference, solver,
-        species, key_names, basename='res'):
+        species, key_names, basename='res', rerun=True):
     '''
     Mockup run function, returns a zero data structure
     '''
