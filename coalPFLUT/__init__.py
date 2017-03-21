@@ -4,6 +4,7 @@ coalPFLUT
 """
 from coalFLUT import *
 import multiprocessing as mp
+import numpy as np
 import logging
 from autologging import logged
 import shutil
@@ -164,26 +165,27 @@ class CoalPFLUT(CoalFLUT):
                 print("remove case {}: {}".format(idx,r.variables))
                 toRm.append(idx)
                 #del results[idx]
-            if not r.output_dict.has_key('delta'):
+            if not r.output_dict.has_key('deltah'):
+                #work on fp setups
+                print("case {} has no deltah: {}".format(idx,r.variables))
                 results[idx]['deltah'] = 0.0*results[idx]['X']
-            #work on fp setups
-            if r.data[0][0]<0.0:
-                #remove first point
-                #results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
-                #           input_var=r.input_variables,
-                #           data=r.data[1:],
-                #           variables=r.variables)
-                #safe last x val
-                xlast = r['X'][-1]
-                #shift data and remove last point
-                r['X']-=r.data[0][0]
-                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
-                           input_var=r.input_variables,
-                           data=r.data[r['X']<=xlast],
-                           variables=r.variables)
-                results[idx]['X'][-1]=xlast
-            #work on bs setups
+                if r.data[0][0]<0.0:
+                    #remove first point
+                    #results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                    #           input_var=r.input_variables,
+                    #           data=r.data[1:],
+                    #           variables=r.variables)
+                    #safe last x val
+                    xlast = r['X'][-1]
+                    #shift data and remove last point
+                    r['X']-=r.data[0][0]
+                    results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                               input_var=r.input_variables,
+                               data=r.data[r['X']<=xlast],
+                               variables=r.variables)
+                    results[idx]['X'][-1]=xlast
             else:
+                #work on bs setups
                 #safe first x val
                 xfirst = r['X'][0]
                 #safe last x val
