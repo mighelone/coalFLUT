@@ -294,7 +294,7 @@ class CoalPFLUT(CoalFLUT):
         oxid = {}
         oxid['Y'] = self.oxidizer['Y']
         for Y in self.Y:
-            mix = self.mix_streams(Y)
+            mix = self.mix_streams(Y).copy()
             self.__log.debug(
                 'Y=%s H_mix=%s', Y, mix['H'])
 
@@ -360,6 +360,8 @@ class CoalPFLUT(CoalFLUT):
                 Z = tmp['Z']
                 print(colored('parallel: sL is {}, Y is {}, Z is {}'.format(sL,Y,Z), 'magenta'))
                 for VelRatio in self.VelRatio[:-1]:
+                    fuel = self.mix_streams(Y).copy()
+                    fuel['T'] = fuel['T'][0]
                     fuel['u'] = VelRatio*sL 
                     print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
                     parameters = OrderedDict()
