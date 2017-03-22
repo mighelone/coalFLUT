@@ -57,7 +57,7 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
     logger.debug('basename_calc: {}'.format(basename_calc))
     out_file = basename_run + '.ulf'
     logger.debug('out_file: %s', out_file)
-    input_file = "inp" + label + ".ulf"
+    input_file = "inp_"+ basename + label + ".ulf"
     logger.debug('input_file: {}'.format(input_file))
     shutil.copyfile(ulf_reference, input_file)
     runner = ulf.UlfRun(input_file, solver)
