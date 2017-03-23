@@ -97,7 +97,7 @@
 // --------------------------------------------------------------------
 // result and restart options
 // --------------------------------------------------------------------
-#define RESULT_BASENAME flamelet_ct_Mix_ch4_gri30_113_;
+#define RESULT_BASENAME test;
 #define RESTART_OPTION NO;
 #define RESTART_FILE flamelet_final.ulf;
 // --------------------------------------------------------------------
