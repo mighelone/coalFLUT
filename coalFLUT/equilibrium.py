@@ -2,13 +2,15 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 from .flut import CoalFLUT
-from scoop import futures
+# from scoop import futures
 import functools
 import numpy as np
 from autologging import logged
 import pyFLUT
-
-mapf = futures.map
+import pyFLUT.equilibrium
+import multiprocessing as mp
+# mapf = futures.map
+# mapf = map
 
 
 def z_from_phi(phi, zst):
@@ -45,7 +47,7 @@ class CoalFLUTEq(CoalFLUT, pyFLUT.Flut):
     export_variables = ['T', 'rho', 'p', 'MMean', 'cpMean',
                         'hMean', 'visc', 'alpha', 'lambda']
 
-    def run_scoop(self):
+    def run_scoop(self, n_p=1):
         def fuel_gen():
             for Yi in self.Y:
                 for H in self.Hnorm:
@@ -77,6 +79,15 @@ class CoalFLUTEq(CoalFLUT, pyFLUT.Flut):
                 for H in self.Hnorm:
                     yield {'Y': Yi, 'Hnorm': H}
 
+        use_mp = n_p > 1
+        if use_mp:
+            self.__log.debug('Create mp pool')
+            pool = mp.Pool(n_p)
+            mapf = pool.imap
+        else:
+            self.__log.debug('Run serial')
+            mapf = map
+
         Z = np.linspace(0, 1, 101)
         results = list(mapf(
             functools.partial(
@@ -87,6 +98,9 @@ class CoalFLUTEq(CoalFLUT, pyFLUT.Flut):
             fuel_gen(),
             oxid_gen(),
             parameters_gen()))
+
+        if use_mp:
+            pool.close()
 
         self.assemble_data(results)
 

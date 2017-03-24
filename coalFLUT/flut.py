@@ -17,7 +17,7 @@ class CoalFLUT(pyFLUT.ulf.dflut.DFLUT_2stream):
     streams = ['volatiles', 'oxidizer']
 
     def __init__(self, input_yml):
-        super(CoalFLUT, self).__init__(input_yml=input_yml)
+        super(CoalFLUT, self).__init__(input_yml)
         self.set_chargas()
 
     def mix_streams(self, Y):

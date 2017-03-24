@@ -10,6 +10,9 @@ if __name__ == '__main__':
         description=('Generate a multi-dimensional FLUT for'
                      ' coal combustion based on equilibrium')
     )
+    parser.add_argument('-n', dest='n_p', action='store',
+                        default=1, type=int, help='Number of processors')
+
     parser.add_argument('yml', action='store',
                         default=None, help="YML input file")
     parser.add_argument('-d', dest='debug',
@@ -58,5 +61,5 @@ if __name__ == '__main__':
     # export to flameletConfig
     logging.info('Export data to FLUT.h5 (flameletConfig)')
     flut.write_hdf5(file_name='FLUT.h5',
-                    turbulent=argument.turbulent, n_proc=1)
+                    turbulent=argument.turbulent, n_proc=argument.n_p)
     #                verbose=argument.debug)

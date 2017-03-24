@@ -14,6 +14,8 @@ if __name__ == "__main__":
     )
     parser.add_argument('yml', action='store',
                         default=None, help="YML input file")
+    parser.add_argument('-n', dest='n_p', action='store',
+                        default=1, type=int, help='Number of processors')
     parser.add_argument('--hdf5', dest='hdf5',
                         action='store_true',
                         help=(
@@ -96,4 +98,4 @@ if __name__ == "__main__":
             logging.debug('Export data to HDF5 flamelet_config %s',
                           flamelet_config)
             flut.write_hdf5(file_name=flamelet_config,
-                            turbulent=argument.turbulent, n_proc=n_p)
+                            turbulent=argument.turbulent, n_proc=argument.n_p)
