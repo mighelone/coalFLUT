@@ -4,6 +4,7 @@ coalPFLUT
 """
 from coalFLUT import *
 import multiprocessing as mp
+import numpy as np
 import logging
 from autologging import logged
 import shutil
@@ -56,7 +57,7 @@ def run_bs(fuel, oxidizer, parameters, par_format, ulf_reference, solver, specie
     logger.debug('basename_calc: {}'.format(basename_calc))
     out_file = basename_run + '.ulf'
     logger.debug('out_file: %s', out_file)
-    input_file = "inp" + label + ".ulf"
+    input_file = "inp_"+ basename + label + ".ulf"
     logger.debug('input_file: {}'.format(input_file))
     shutil.copyfile(ulf_reference, input_file)
     runner = ulf.UlfRun(input_file, solver)
@@ -164,26 +165,27 @@ class CoalPFLUT(CoalFLUT):
                 print("remove case {}: {}".format(idx,r.variables))
                 toRm.append(idx)
                 #del results[idx]
-            if not r.output_dict.has_key('delta'):
+            if not r.output_dict.has_key('deltah'):
+                #work on fp setups
+                print("case {} has no deltah: {}".format(idx,r.variables))
                 results[idx]['deltah'] = 0.0*results[idx]['X']
-            #work on fp setups
-            if r.data[0][0]<0.0:
-                #remove first point
-                #results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
-                #           input_var=r.input_variables,
-                #           data=r.data[1:],
-                #           variables=r.variables)
-                #safe last x val
-                xlast = r['X'][-1]
-                #shift data and remove last point
-                r['X']-=r.data[0][0]
-                results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
-                           input_var=r.input_variables,
-                           data=r.data[r['X']<=xlast],
-                           variables=r.variables)
-                results[idx]['X'][-1]=xlast
-            #work on bs setups
+                if r.data[0][0]<0.0:
+                    #remove first point
+                    #results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                    #           input_var=r.input_variables,
+                    #           data=r.data[1:],
+                    #           variables=r.variables)
+                    #safe last x val
+                    xlast = r['X'][-1]
+                    #shift data and remove last point
+                    r['X']-=r.data[0][0]
+                    results[idx] = pyFLUT.Flame1D(output_dict=list(r.output_dict.keys()),
+                               input_var=r.input_variables,
+                               data=r.data[r['X']<=xlast],
+                               variables=r.variables)
+                    results[idx]['X'][-1]=xlast
             else:
+                #work on bs setups
                 #safe first x val
                 xfirst = r['X'][0]
                 #safe last x val
@@ -292,7 +294,7 @@ class CoalPFLUT(CoalFLUT):
         oxid = {}
         oxid['Y'] = self.oxidizer['Y']
         for Y in self.Y:
-            mix = self.mix_streams(Y)
+            mix = self.mix_streams(Y).copy()
             self.__log.debug(
                 'Y=%s H_mix=%s', Y, mix['H'])
 
@@ -358,6 +360,8 @@ class CoalPFLUT(CoalFLUT):
                 Z = tmp['Z']
                 print(colored('parallel: sL is {}, Y is {}, Z is {}'.format(sL,Y,Z), 'magenta'))
                 for VelRatio in self.VelRatio[:-1]:
+                    fuel = self.mix_streams(Y).copy()
+                    fuel['T'] = fuel['T'][0]
                     fuel['u'] = VelRatio*sL 
                     print(colored('VelRatio is {}. u is {}'.format(VelRatio,fuel['u']), 'yellow'))
                     parameters = OrderedDict()
