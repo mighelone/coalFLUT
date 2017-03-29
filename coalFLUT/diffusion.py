@@ -2,7 +2,7 @@ from __future__ import division, absolute_import
 from __future__ import print_function, unicode_literals
 
 
-from pyFLUT.ulf.sldf_2stream import DiffusionFlut2Stream
+from pyFLUT.ulf.diffusion import DiffusionFlut2Stream
 from .abstract import AbstractCoalFLUT
 from autologging import logged
 import h5py
