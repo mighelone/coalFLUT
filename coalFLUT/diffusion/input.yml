@@ -45,10 +45,6 @@ flut:
 
 
 ulf:
-  # Solver
-  # solver: /shared_home/vascella/Codes/ulf/build.gcc/ulf.x
-  # solver: /home/vascella/Codes/ulf/build/ulf.x
-  # solver: ulf.x
   solver: /shared_home/vascella/Codes/ulf2/build/ulfrun
   # Reference ulf configuration file
   ulf_reference: flamelet_setup.ulf
