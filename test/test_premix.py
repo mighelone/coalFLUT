@@ -11,7 +11,7 @@ from pyFLUT.ulf import UlfRun
 settings = {
     'parameters': {
         'Hnorm': {'method': 'linspace', 'values': [0, 1, 5]},
-        'vel_ratio': {'method': 'linspace', 'values': [0.1, 1, 10]},
+        'velratio': {'method': 'linspace', 'values': [0.1, 1, 10]},
         'Y': {'method': 'linspace', 'values': [0.7, 1.0, 31]},
         'Z': {'method': 'linspace', 'points': 101, 'values': [0, 0.2, 21]}},
     'flut': {
@@ -60,8 +60,8 @@ def test_path():
     yield path
 
     # teardown
-    # os.chdir(cwd)
-    # shutil.rmtree(path)
+    os.chdir(cwd)
+    shutil.rmtree(path)
 
 
 @pytest.fixture
@@ -72,9 +72,9 @@ def flut(test_path):
 
     # teardown
     # remove intermediate files
-    #[os.remove(f) for f in glob.iglob('inp_*.ulf')]
-    #[os.remove(f)
-    # for f in glob.iglob('{}_*.ulf'.format(cflut.basename))]
+    [os.remove(f) for f in glob.iglob('inp_*.ulf')]
+    [os.remove(f)
+     for f in glob.iglob('{}_*.ulf'.format(cflut.basename))]
 
 
 def test_init(flut):
@@ -87,7 +87,7 @@ def test_init(flut):
 
 def test_run_set_runner_fp(flut):
     """
-    test set_runner for vel_ratio = 1
+    test set_runner for velratio = 1
     """
     parameters = (1, 0.1, 1)
     basename_calc = flut.basename + flut.create_label(parameters) + '_run'
@@ -103,7 +103,7 @@ def test_run_set_runner_fp(flut):
 
 def test_run_set_runner_bs(flut):
     '''
-    test set_runner for vel_ratio < 1
+    test set_runner for velratio < 1
     '''
     parameters = (0.9, 0.1, 1)
 
