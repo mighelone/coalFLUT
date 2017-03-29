@@ -6,7 +6,9 @@ import numpy as np
 
 from coalFLUT.premix import CoalPremixFLUT
 from pyFLUT.ulf import UlfRun
+import pyFLUT
 
+ulf_results = os.path.abspath('test_premix/cpremix_velratio0.8000_Z0.1250_Y1.0000.ulf')
 
 settings = {
     'parameters': {
@@ -118,3 +120,15 @@ def test_run_set_runner_bs(flut):
     assert runner[flut.keys['basename']] == basename_calc
     # assert float(runner[flut.keys['T_fix']])
     assert float(runner[flut.keys['sl_guess']]) == sL * parameters[0]
+
+def test_cutflames():
+    flame = pyFLUT.Flame1D.read_ulf(ulf_results)
+    flamec= CoalPremixFLUT._cut_flame(flame)
+
+    x = flamec['X']
+    for index in (0, -1):
+        assert x[index] == flame['X'][index]
+    assert flame['T'][0] == flamec['T'][0]
+    assert flamec['T'][0] < flamec['T'][1]
+    
+    

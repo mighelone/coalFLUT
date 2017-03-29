@@ -77,6 +77,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         parameters = self._parameter.copy()
         parameters['velratio'] = parameters['velratio'][:-1]
         results_bs = self._run_parameters(n_p, parameters)
+        # results_bs = [self._cut_flame(res) for res in results_bs]
 
         self.assemble_results(results_fp + results_bs)
 
@@ -114,3 +115,44 @@ class CoalPremixFLUT(AbstractCoalFLUT):
                                      gas.species_names)
 
         return runner
+
+    def assemble_results(self, results, verbose=True):
+        results = [self._cut_flame(res) if res.variables['velratio'] < 1 else res
+                   for res in results]
+        super(CoalPremixFLUT, self).assemble_results(results, verbose)
+
+    def convert_cc_to_uniform_grid(self, output_variables=None, n_points=None,
+                                   n_proc=1, verbose=False):
+        if verbose:
+            self.__log.info('Map {} to cc'.format(self.along))
+        flut_cc = super(CoalPremixFLUT, self).convert_cc_to_uniform_grid(
+            output_variables, n_points, n_proc, verbose)
+
+        # hMean_min
+        flut_cc['hMean_min'] = 0
+        flut_cc['hMean_min'] = flut_cc['hMean'].min(axis=0)
+        # hMean_max
+        flut_cc['hMean_max'] = 0
+        flut_cc['hMean_max'] = flut_cc['hMean'].max(axis=0)
+        # Hnorm
+        flut_cc['Hnorm'] = ((flut_cc['hMean'] - flut_cc['hMean_min'])/
+                            (flut_cc['hMean_max'] - flut_cc['hMean_min']))
+        # map from velratio to Hnorm
+        if verbose:
+            self.__log.info('Map velratio to Hnorm')
+        return flut_cc.map_variables(
+            from_inp='velratio', to_inp='Hnorm', n_points=11, verbose=verbose, n_proc=n_proc)
+
+        
+        
+
+    @staticmethod
+    def _cut_flame(flame):
+        last_X = np.where(flame['T'] == flame['T'][0])[0][-1]
+        data = flame.data[slice(last_X, -1),  :]
+        cutted_flame = pyFLUT.Flame1D(data=data,
+                                      input_var='X',
+                                      output_dict=flame.output_dict,
+                                      variables=flame.variables)
+        cutted_flame['X'] = cutted_flame['X'] - cutted_flame['X'][0]
+        return cutted_flame.extend_length(flame['X'][-1])
