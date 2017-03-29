@@ -1,0 +1,94 @@
+// --------------------------------------------------
+// general options
+// --------------------------------------------------
+#define ZST 0.117236755225;
+#define CHIST 0.0;
+#define TFIX 0.0;
+#define RESTART NO;
+#define RESTART_FILE fp_ct_Mix_ch4_gri30_113_ulfNewton_final.ulf;
+#define RESTART_TYPE ASCII;
+// case name for output files
+#define RESULT_BASENAME fp_ct_Mix_ch4_gri30_113_ulfNewton_;
+// domain dimensions
+#define XMIN 0.0;
+#define XMAX 0.02;
+#define PRESSURE 101325;
+// mechanism
+#define MAIN_MIXTURE generalMix;
+#define MIXTURE_TYPE CANTERA_MIXTURE;
+#define MECHANISM USC_Mech_Xia;
+// when using compositeMix as main mixture
+#define CHEMISTRY_LIB ulfChemistry;
+#define TRANSPORT_LIB egTransport;
+#define TRANSPORT_TYPE Mix;
+#define GRADIENT_TYPE mass;
+#define LEWIS_UPDATE_TYPE constant;
+#define MOLE_OR_MASS massFrac;
+#define Z_VALUE 1.0;
+#define SL_GUESS 0.3;
+// species list
+#define SPEC1 CH4;
+#define SPEC2 O2;
+#define SPEC3 N2;
+#define SPEC4 H2O;
+#define SPEC5 CO2;
+#define SPEC6 C6H6;
+#define SPEC7 CO;
+// fuel definition
+#define T_FUEL 1000.0;
+#define Y1_FUEL 1.0;
+#define Y2_FUEL 0.0;
+#define Y3_FUEL 0.0;
+#define Y4_FUEL 0.0;
+#define Y5_FUEL 0.0;
+#define Y6_FUEL 0.0;
+#define Y7_FUEL 0.0;
+// oxidizer definition
+#define T_OXID 1000.0;
+#define Y1_OXID 0.0;
+#define Y2_OXID 0.21;
+#define Y3_OXID 0.79;
+#define Y4_OXID 0.0;
+#define Y5_OXID 0.0;
+#define Y6_OXID 0.0;
+#define Y7_OXID 0.0;
+// --------------------------------------------------
+// solver options
+// --------------------------------------------------
+#define NPOINTS_START 18;
+#define REFINE_TARGET 270;
+#define NPOINTS_ADD 10;
+#define ABS_TOL 1.0e-9;
+#define REL_TOL 1.0e-6;
+#define INT_ORDER 1;
+// newton iteration properties
+#define JAC_STAT_AGE 10;
+#define JAC_TRAN_AGE 20;
+#define N_DAMP_STEPS 6;
+#define MAX_TIME_STEP 1.0e-03;
+#define MIN_TIME_STEP 1.0e-12;
+#define N_TIME_STEPS 20;
+// --------------------------------------------------
+// initialization
+// --------------------------------------------------
+// mesh point threshold when to activate temperature equation
+#define T_SWITCH_NPOINTS 20;
+// configure tanh profile for T
+// > should be closely downstream of XPOS
+#define T_PROFILE_POSITION 0.005;
+#define T_PROFILE_SHARPNESS 180.0;
+// configure linear start profile for Y
+// > should enclose XPOS and T_PROFILE_POSITION
+#define Y_LIN_PROFILE_START 0.0055;
+#define Y_LIN_PROFILE_END 0.010;
+// include template file
+#include "fp_new_template.ulf";
+// --------------------------------------------------
+// fp model 2 - setup with inner boundary condition
+// > flame anchored at a position within the domain
+// > more accurate, less stable (flame might move)
+// --------------------------------------------------
+// 
+// 
+// 
+// 

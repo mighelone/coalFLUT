@@ -1,0 +1,522 @@
+// ------------------------------------------------------------
+//
+// this is a template for a freely propagating flame
+//
+// ------------------------------------------------------------
+//#define RENDERER sdlresize;
+#define RENDERER none;
+runTime
+{
+	startTime		  0.0;
+	endTime			  1.0;
+	writeInterval	  1.0;
+	timePrecision	  3;
+}
+
+solution
+{
+	requiredFields( artVel, u );
+    additionalUpdateFunction
+    {
+        eqID equationAggregator;
+        runOnRestart ON;
+        furtherEquations
+        {
+            monitorT
+            {
+                eqID ulfMonitor;
+                renderType RENDERER;
+                xrange( XMIN, XMAX );
+                yrange( 0, 2500 );
+                xtics( T_PROFILE_POSITION );
+                ytics( 0 );
+                referenceField T;
+                window( 500, 250 );
+                windowPosition( 500, 50 );
+                plotInterval 10;
+            }
+            monitorMFlux
+            {
+                eqID ulfMonitor;
+                renderType RENDERER;
+                xrange( XMIN, XMAX );
+                yrange( 0, 5 );
+                xtics( );
+                ytics( );
+                referenceField MFlux;
+                window( 100, 100 );
+                windowPosition( 1050, 50 );
+                plotInterval 10;
+            }
+            monitorOH
+            {
+                eqID ulfMonitor;
+                renderType RENDERER;
+                xrange( XMIN, XMAX );
+                yrange( 0, 0.03 );
+                xtics( T_PROFILE_POSITION );
+                ytics( 0 );
+                referenceField OH;
+                window( 500, 250 );
+                windowPosition( 500, 325 );
+                plotInterval 10;
+            }
+            monitor_tdot
+            {
+                eqID ulfMonitor;
+                renderType RENDERER;
+                xrange( XMIN, XMAX );
+                yrange( 0, 1e8 );
+                xtics( T_PROFILE_POSITION );
+                ytics( 0 );
+                referenceField tdot;
+                window( 500, 250 );
+                windowPosition( 500, 600 );
+                plotInterval 10;
+            }
+            mixtureUpdate
+            {
+                eqID mixtureUpdate;
+            }
+            activateTemperature
+            {
+                eqID activateSolutionEntries;
+                solutionEntryList( T, MFlux );
+                pointsThreshold T_SWITCH_NPOINTS;
+            }
+        }
+    }
+	solutionEntries
+	{
+		MFlux
+		{
+            dimensions  1;
+			eqID        fp_innerBC_MFlux;
+            eqType      algebraic;
+            active      NO; // activate it later on
+			minValue    0.0;
+			maxValue    50.0; // usually around unity or smaller
+			boundaryConditions 
+			{
+				computeMFlux
+				{
+					patchList ( inner );
+					eqID    fp_bc_computeMFlux;
+                    eqType  algebraic;
+				}
+			}
+		}
+		T
+		{
+			eqID        fp_T;
+            eqType      ode;
+            active      NO; // activate it later on
+			minValue    0.0;
+			maxValue    4000.0;
+			boundaryConditions 
+			{
+				freshGases
+				{
+					patchList ( inlet );
+                    eqID        fixedValue_newtonReference;
+                    eqType      algebraic;
+                    reference   "freshMix";
+				}
+                fixedT
+                {
+					patchList ( inner );
+                    eqID        fp_bc_fixTemperature;
+                    eqType      algebraic;
+                    reference   "TFix";
+                }
+				burntGases
+				{
+					patchList ( outlet );
+                    eqID        zeroGradient_newton;
+                    eqType      algebraic;
+				}
+			}
+		}
+		Yi
+		{
+			eqID        fp_Yi;
+            eqType      ode;
+            active      YES;
+			minValue    0.0;
+			maxValue    1.0;
+			boundaryConditions 
+			{
+				freshGases
+				{
+					patchList ( inlet );
+					eqID        fp_bc_Yi_inletDiff;
+                    eqType      algebraic;
+                    reference   "freshMix";
+				}
+				burntGases
+				{
+					patchList ( outlet );
+                    eqID        zeroGradient_newton;
+                    eqType      algebraic;
+				}
+			}
+		}
+	}
+}
+
+preProcessing
+{
+    eqID equationAggregator;
+	runOnRestart ON;
+    furtherEquations
+    {
+		boundaries
+		{
+			eqID equationAggregator;
+			runOnRestart ON;
+			furtherEquations
+			{
+                createFuel
+                {
+                    eqID createGas;
+                    gasName "fuel";
+                    additionalFields( rho, X );
+                    reference MOLE_OR_MASS;
+                    setState
+                    {
+                        T			 T_FUEL;
+                        p            PRESSURE;
+                        SPEC1        Y1_FUEL;
+                        SPEC2        Y2_FUEL;
+                        SPEC3        Y3_FUEL;
+                        SPEC4        Y4_FUEL;
+                        SPEC5        Y5_FUEL;
+                        SPEC6        Y6_FUEL;
+                        SPEC7        Y7_FUEL;
+                    }
+                }
+                createOxidizer
+                {
+                    eqID createGas;
+                    gasName "oxid";
+                    additionalFields( rho, X );
+                    reference MOLE_OR_MASS;
+                    setState
+                    {
+                        T			 T_OXID;
+                        p            PRESSURE;
+                        SPEC1        Y1_OXID;
+                        SPEC2        Y2_OXID;
+                        SPEC3        Y3_OXID;
+                        SPEC4        Y4_OXID;
+                        SPEC5        Y5_OXID;
+                        SPEC6        Y6_OXID;
+                        SPEC7        Y7_OXID;
+                    }
+                }
+                createFreshMix
+                {
+					eqID mixGasZ;
+					Z Z_VALUE;
+                    fuelName "fuel";
+                    oxidName "oxid";
+                    mixName "freshMix";
+                    additionalFields( rho, X );
+                }
+                equilibrateProducts
+                {
+                    eqID equilibrateGas;
+                    gasName "freshMix";
+                    outputName "products";
+                    additionalFields( rho, X );
+                }
+            }
+        }
+		initProfiles
+		{
+			eqID equationAggregator;
+			runOnRestart OFF;
+			furtherEquations
+			{
+                initMFlux
+                {
+                    eqID fp_init_MFlux;
+                    reference "freshMix"; // need the fresh gas density
+                    eqParameters
+                    {
+                        sL SL_GUESS;
+                    }
+                }
+                Y_linearPiece1
+                {
+                    eqID initProfileLinear1D;
+                    cartesianMin Y_LIN_PROFILE_START;
+                    cartesianMax Y_LIN_PROFILE_END;
+                    leftReference "freshMix";
+                    rightReference "products";
+                    fieldList( Y );
+                }
+                Y_linearPiece2
+                {
+                    eqID initProfileLinear1D;
+                    cartesianMin XMIN;
+                    cartesianMax Y_LIN_PROFILE_START;
+                    leftReference "freshMix";
+                    rightReference "freshMix";
+                    fieldList( Y );
+                }
+                Y_linearPiece3
+                {
+                    eqID initProfileLinear1D;
+                    cartesianMin Y_LIN_PROFILE_END;
+                    cartesianMax XMAX;
+                    leftReference "products";
+                    rightReference "products";
+                    fieldList( Y );
+                }
+                T_profile
+                {
+                    eqID initProfileTanh1D;
+                    cartesianMin XMIN;
+                    cartesianMax XMAX;
+                    leftReference "freshMix";
+                    rightReference "products";
+                    position T_PROFILE_POSITION;
+                    sharpness T_PROFILE_SHARPNESS;
+                    fieldList( T );
+                }
+            }
+        }
+        setFixedTemperature
+        {
+            eqID fp_setFixedTemperature;
+            reference "TFix";
+            patchName "inner";
+        }
+        mixtureUpdate
+        {
+            eqID mixtureUpdate;
+        }
+    }
+}
+
+postProcessing
+{
+	eqID fp_pp_sl;
+}
+
+solver
+{
+    solverType ulfNewton;
+	absTol ABS_TOL;
+	relTol REL_TOL;
+	maxSteps 100000000;
+	maxOrder 1;
+    convergenceCriterion maxBased;
+    maxJacStationaryAge JAC_STAT_AGE;
+    maxJacTransientAge JAC_TRAN_AGE;
+    nTimeSteps N_TIME_STEPS;
+    dtMax MAX_TIME_STEP;
+    dtMin MIN_TIME_STEP;
+    initialTimeStep 1.e-6;
+    maxDampSteps N_DAMP_STEPS;
+    dampFactor 2.0;
+    logLevel 1;
+}
+
+libs( "libequations" );
+
+resultFileBaseName RESULT_BASENAME;
+resultType ASCII;
+
+restart RESTART;
+restartFile RESTART_FILE;
+restartType RESTART_TYPE;
+
+mesh
+{
+	dimensions 1;
+	constructionFrom cartesianLimits;
+	axisNames( X );
+	axisLength( NPOINTS_START );
+	cartesianMin( XMIN );
+	cartesianMax( XMAX );
+    initialMeshAdaption
+    {
+        eqID setInitialAxes;
+        X
+        {
+            eqID fp_initMesh;
+            eqParameters
+            {
+                innerPatchPosition T_PROFILE_POSITION;
+            }
+        }
+    }
+	meshAdaption
+	{
+        //eqID ctRemeshing1D;
+        //refinementTarget NPOINTS_END;
+        eqID remeshing;
+        X
+        {
+            refinementTarget REFINE_TARGET;
+            additionalPoints NPOINTS_ADD;
+            weights
+            {
+                eqID refineWeightSolution;
+            }
+            reMesh
+            {
+                eqID refine;
+            }
+        }
+	}
+	patches
+	{
+		inlet
+		{
+			patchMin ( XMIN );
+			patchMax ( XMIN );
+			patchNormal ( 1 );
+		}
+		inner
+		{
+			patchMin ( T_PROFILE_POSITION );
+			patchMax ( T_PROFILE_POSITION );
+		}
+		outlet
+		{
+			patchMin ( XMAX );
+			patchMax ( XMAX );
+			patchNormal ( -1 );
+		}
+	}
+}
+
+mixture
+{
+    mainMixture MAIN_MIXTURE;
+    generalMix
+    {
+        mixtureType     MIXTURE_TYPE;
+        mechanism       MECHANISM;
+        transportType   TRANSPORT_TYPE;
+        gradientType    GRADIENT_TYPE;
+        mixtureEntries
+        {
+            Le
+            {
+                updateType LEWIS_UPDATE_TYPE;
+            }
+            rho	
+            {
+                updateType standard;
+            }
+            lambda
+            {
+                updateType standard;
+            }
+            cpMean
+            {
+                updateType standard;
+            }
+            cp
+            {
+                updateType standard;
+            }
+            yVdiff
+            {
+                updateType standard;
+            }
+            yVdiffCorr
+            {
+                updateType standard;
+            }
+            reactionRate
+            {
+                updateType standard;
+            }
+            tdot
+            {
+                updateType standard;
+            }
+            hMean
+            {
+                updateType standard;
+            }
+        }
+    }
+}
+
+fields
+{
+	default
+	{
+		referenceFrame cellCentered;
+		interpolate NO;
+		frozen NO;
+		write NO;
+		fixedValue 0.0;
+		firstOrder CDS;
+		secondOrder CDS;
+		diffusive CDS;
+	}
+    artVel
+    {
+        // this quantity organizes the correct upwind discretization 
+        // in the MFlux equation (see equation in fp.cpp)
+		frozen YES;
+        eqID fp_innerBC_setArtVel;
+        eqParameters
+        {
+            xPos T_PROFILE_POSITION; // inner patch position
+        }
+    }
+	MFlux
+	{
+        write YES;
+		firstOrder UDS;
+	}
+    T
+    {
+		write YES;
+		firstOrder UDS;
+        fixedValue 300;
+    }
+	YiDefault
+	{
+		write YES;
+		firstOrder UDS;
+	}
+	p
+	{
+		write YES;
+		interpolate YES;
+		fixedValue PRESSURE;
+	}
+	rho
+	{
+		write YES;
+	}
+	LeiDefault
+	{
+		write YES;
+		interpolate YES;
+		fixedValue 1.0;
+	}
+    XiDefault
+    {
+        write YES;
+    }
+	hMean
+	{
+		write YES;
+	}
+	u
+	{
+        // u will be computed during post processing 
+        // > see fp_fp_postProcessing
+		write YES;
+	}
+}

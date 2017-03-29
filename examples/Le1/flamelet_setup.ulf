@@ -9,7 +9,7 @@
 // main mixture [ generalMix | compositeMix ]
 #define MAIN_MIXTURE generalMix;
 #define MIXTURE_TYPE CANTERA_MIXTURE;
-#define MECHANISM ch4_smooke;
+#define MECHANISM /shared_home/vascella/coalFLUT/coalFLUT/examples/Le1/ch4_smooke;
 // ...when using compositeMix as main mixture
 #define CHEMISTRY_LIB ulfChemistry;
 #define TRANSPORT_LIB egTransport;

@@ -22,15 +22,14 @@ class CoalDiffusionFLUT(AbstractCoalFLUT, DiffusionFlut2Stream):
               'ch4_smooke.xml',
               'startProfiles.ulf')
 
-    def write_hdf5(self, file_name='FLUT.h5', turbulent=False,
+    def write_hdf5(self, turbulent=False, verbose=True,
                    n_proc=1):
         # add AlphaC to h5 file_input
         self_h5 = super(CoalDiffusionFLUT, self).write_hdf5(
-            file_name=file_name,
             turbulent=turbulent,
             n_proc=n_proc)
         self.__log.debug('Add AlphaC=%s to FLUT file', self.alphac)
-        h5 = h5py.File(file_name, 'r+')
+        h5 = h5py.File('FLUT.h5', 'r+')
         h5['Input'].create_dataset(name='AlphaC',
                                    shape=(1,),
                                    dtype=float,

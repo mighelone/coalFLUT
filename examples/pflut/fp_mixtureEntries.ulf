@@ -1,0 +1,49 @@
+transportType TRANSPORT_TYPE;
+gradientType  GRADIENT_TYPE;
+mixtureEntries
+{
+    Le
+    {
+        updateType LEWIS_UPDATE_TYPE;
+    }
+    tdot
+    {
+        updateType standard;
+    }
+    g	
+    {
+        updateType standard;
+    }
+    rho	
+    {
+        updateType standard;
+    }
+    lambda
+    {
+        updateType standard;
+    }
+    hMean
+    {
+        updateType standard;
+    }
+    cpMean
+    {
+        updateType standard;
+    }
+    cp
+    {
+        updateType standard;
+    }
+    yVdiff
+    {
+        updateType standard;
+    }
+    yVdiffCorr
+    {
+        updateType standard;
+    }
+    reactionRate
+    {
+        updateType standard;
+    }
+}

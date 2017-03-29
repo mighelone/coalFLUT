@@ -1,0 +1,100 @@
+# volatile composition
+# now the direct composition is given
+# in future we can also assign the C, H, O, N ultimate analysis
+# temperature can be given as list, arange or linspace, logspace followed by a list of values
+# arange or linspace, logspace are numpy functions
+volatiles:
+  Y:
+     CO2: 0.45796
+     CO: 0.06477
+     H2: 0.04213
+     C6H6: 0.42316
+     N2: 0.01198
+  T:
+    min: 310
+    max: 310 
+
+oxidizer:
+  Y:
+    CH4: 4.4458e-2 
+    N2: 6.4053e-1
+    O2: 3.1501e-1
+  T:
+    min: 310
+    max: 310
+
+pressure: 101325
+    
+mechanism: USC_Mech_Xia.xml
+
+# two mixture fractions are defined Z1 and Z2, which are respectively the devolatilization and
+# the char burnout gases
+# Z = Z1 + Z2 defined in [0:1]
+# Y = Z1 / (Z1 + Z2) defined in [0:1]
+flut:
+  Z:
+    points: 101
+    #method: list
+    method: linspace
+    values: [0,0.2,21]
+  Y:
+    #method: list
+    method: linspace
+    values: [0.70, 1., 31]
+    #values: [0.72, 0.73, 2]
+    #values: [0.90, 0.94, 5]
+    #values: [0.75, 0.85, 3]
+    #values: [0.9, 1., 11]
+    #values:
+    #  - 0
+    #  - 1
+    #  - 31
+  chist:
+    #method: list
+    #values: [1e3]
+    method: logspace
+    values: [-3.0, 2.0, 30]
+
+                                                                                                                
+  Hnorm:
+    method: linspace
+    values: [0, 1, 5]
+    deltaT: 300
+
+  VelRatio:
+    method: linspace 
+    values: [0.1, 1, 10]
+
+  pv:
+    CO: 1
+    CO2: 1
+
+  c:
+    points: 101
+
+  varZ:
+    points: 5
+
+  variables:
+    ['rho', 'T']
+  solver: OpenFOAM
+    
+ulf:
+  solver: /shared_home/messig/ULF/build_opt/ulf.x
+  reference: bs_setup.ulf
+  fpreference: fp_setup.ulf
+  basename: bSXiaFine
+  format: "{:5.4f}"
+  points: 270
+  TpatchEnd: 0.002
+  run_existing: False
+  Le1: True
+
+  keys:
+    z_st: ZST
+    basename: RESULT_BASENAME
+    n_points: REFINE_TARGET
+    mechanism: MECHANISM
+    chist: CHIST
+    pressure: PRESSURE
+

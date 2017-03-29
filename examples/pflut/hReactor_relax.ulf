@@ -1,0 +1,116 @@
+runTime
+{
+    startTime		  0.0;
+    endTime			  END_TIME;
+    writeInterval	  END_TIME;
+    timePrecision	  6;
+}
+
+solution
+{
+    solutionEntries
+    {
+        T
+        {
+			eqModule    "libequations";
+            eqID        T_homReact;
+            eqType      ode;
+            minValue    250.0;
+            maxValue    3000.0;
+        }
+        Yi
+        {
+			eqModule    "libequations";
+            eqID        Yi_homReact;
+            eqType      ode;
+            minValue    0.0;
+            maxValue    1.0;
+        }
+    }
+}
+
+solver
+{
+    solverType cvode;
+    absTol 1e-12;
+    relTol 1e-8;
+    maxSteps 100000; // just a high number
+    maxOrder 5;
+}
+
+resultFileBaseName "hReactor_relax_"; 
+resultType ASCII;
+
+restart NO;
+restartType ASCII;
+restartFile "hReactor_relax_init.ulf";
+writeFiles NO;
+
+mesh
+{
+	dimensions 1;
+	constructionFrom cartesianLimits;
+	axisNames( X );
+	axisLength( NPOINTS );
+	cartesianMin( 0 );
+	cartesianMax( 1 );
+}
+
+mixture
+{
+    mainMixture generalMix;
+    generalMix
+    {
+        mixtureType     MIX_TYPE;
+        mechanism       MECHANISM;
+        transportType   Mix;
+        mixtureEntries
+        {
+            tdot
+            {
+                updateType standard;
+            } 
+            reactionRate
+            {
+                updateType standard;
+            } 
+			g
+			{
+				updateType standard;
+			}
+			hMean
+			{
+				updateType standard;
+			}
+        }
+    }
+}
+
+fields
+{
+	default
+	{
+		referenceFrame cellCentered;
+		interpolate YES;
+		frozen NO;
+		write NO;
+		fixedValue 0.0;
+		firstOrder NONE;
+		secondOrder NONE;
+		diffusive NONE;
+	}
+	T
+	{
+        write YES;
+        fixedValue 300.0; // only relevant for initialization
+	}
+	p
+	{
+        write YES;
+        fixedValue 101325.0; // only relevant for initialization
+	}
+    YiDefault
+    {
+        write YES;
+    }
+}
