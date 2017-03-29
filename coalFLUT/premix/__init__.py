@@ -22,7 +22,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
 
     _along = 'X'
     _key_variable = 'X'
-    _parameter_names = ['vel_ratio', 'Z', 'Y']
+    _parameter_names = ['velratio', 'Z', 'Y']
     _key_names_extra = ('tpatch_end', 'Z', 'T_fix', 'sl_guess')
     _ulf_parameters_extra = ('tpatch_end', 'ulf_reference_bs', 'Le1',
                              'T_fix', 'sl_guess')
@@ -48,16 +48,18 @@ class CoalPremixFLUT(AbstractCoalFLUT):
 
     def run(self, n_p=1):
 
-        # the first time calculate solution for vel_ratio=1
+        # the first time calculate solution for velratio=1
         parameters = self._parameter.copy()
-        parameters['vel_ratio'] = np.array([1.0])
+        parameters['velratio'] = np.array([1.0])
 
         self.__log.info(
             'Start calculating freely propagating (fp) flames')
         results_fp = self._run_parameters(n_p, parameters)
+        for res in results_fp:
+            res['deltah'] = 0
 
         # sL is the array ZxY of the laminar flame speeds
-        sL = np.zeros_like((len(self.Z), len(self.Y)))
+        sL = np.zeros((len(self.Z), len(self.Y)))
         Z = self.Z.tolist()
         Y = self.Y.tolist()
         assert len(sL.ravel()) == len(results_fp), (
@@ -65,7 +67,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
             "results_fp different from YxZ")
         for flame in results_fp:
             i_Z = Z.index(flame.variables['Z'])
-            i_Y = Y.index(flame.variables['Z'])
+            i_Y = Y.index(flame.variables['Y'])
             sL[i_Z, i_Y] = flame['u'][0]
 
         self.sL = sL
@@ -73,7 +75,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         self.__log.info(
             'Start calculating bs flames')
         parameters = self._parameter.copy()
-        parameters['vel_ratio'] = parameters['vel_ratio'][:-1]
+        parameters['velratio'] = parameters['velratio'][:-1]
         results_bs = self._run_parameters(n_p, parameters)
 
         self.assemble_results(results_fp + results_bs)
@@ -85,19 +87,19 @@ class CoalPremixFLUT(AbstractCoalFLUT):
             gas = cantera.Solution(self.mechanism)
         else:
             gas = self.gas
-        vel_ratio, Z, Y = parameters
+        velratio, Z, Y = parameters
         # define the streams for the given Hnorm and Y
         mix = self.mix_fuels(Y, 0, gas)
         oxid = self.calc_temperature(self.oxidizer, 0, gas)
 
         # get laminar flame speed
 
-        if vel_ratio < 1:
+        if velratio < 1:
             # use bs setup
             shutil.copy(self.ulf_reference_bs, input_file)
             sL = self.sL[
                 self.Z.tolist().index(Z),
-                self.Y.tolist().index(Y)] * vel_ratio
+                self.Y.tolist().index(Y)] * velratio
         else:
             sL = self.sl_guess
 

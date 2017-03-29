@@ -109,8 +109,8 @@ def test_run_set_runner_bs(flut):
 
     sL = 0.5
     flut.sL = np.ones((len(flut.Z), len(flut.Y)), dtype=float) * sL
-    basename_calc = flut.basename + flut.create_label(parameters) + '_run.ulf'
-    input_file = 'inp' + flut.create_label(parameters) + '_run'
+    basename_calc = flut.basename + flut.create_label(parameters) + '_run'
+    input_file = 'inp' + flut.create_label(parameters) + '_run.ulf'
     shutil.copy(flut.ulf_reference, input_file)
     runner = flut._run_set_runner(basename_calc, input_file, parameters)
 
