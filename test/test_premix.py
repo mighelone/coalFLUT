@@ -60,8 +60,8 @@ def test_path():
     yield path
 
     # teardown
-    os.chdir(cwd)
-    shutil.rmtree(path)
+    # os.chdir(cwd)
+    # shutil.rmtree(path)
 
 
 @pytest.fixture
@@ -72,9 +72,9 @@ def flut(test_path):
 
     # teardown
     # remove intermediate files
-    [os.remove(f) for f in glob.iglob('inp_*.ulf')]
-    [os.remove(f)
-     for f in glob.iglob('{}_*.ulf'.format(cflut.basename))]
+    #[os.remove(f) for f in glob.iglob('inp_*.ulf')]
+    #[os.remove(f)
+    # for f in glob.iglob('{}_*.ulf'.format(cflut.basename))]
 
 
 def test_init(flut):
@@ -88,7 +88,7 @@ def test_run_set_runner_fp(flut):
     """
     parameters = (1, 0.1, 1)
     basename_calc = flut.basename + flut.create_label(parameters) + '_run'
-    input_file = 'inp' + flut.create_label(parameters) + '_run'
+    input_file = 'inp' + flut.create_label(parameters) + '_run.ulf'
     shutil.copy(flut.ulf_reference, input_file)
     runner = flut._run_set_runner(basename_calc, input_file, parameters)
 
@@ -106,7 +106,7 @@ def test_run_set_runner_bs(flut):
 
     sL = 0.5
     flut.sL = np.ones((len(flut.Z), len(flut.Y)), dtype=float) * sL
-    basename_calc = flut.basename + flut.create_label(parameters) + '_run'
+    basename_calc = flut.basename + flut.create_label(parameters) + '_run.ulf'
     input_file = 'inp' + flut.create_label(parameters) + '_run'
     shutil.copy(flut.ulf_reference, input_file)
     runner = flut._run_set_runner(basename_calc, input_file, parameters)
