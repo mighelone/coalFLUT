@@ -1,0 +1,4 @@
+[submodule "pyFLUT"]
+	path = pyFLUT
+	url = vgit@vgit:Code/pyFLUT
+	branch = sldf
