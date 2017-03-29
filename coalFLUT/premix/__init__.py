@@ -35,6 +35,17 @@ class CoalPremixFLUT(AbstractCoalFLUT):
               'ch4_smooke.xml',
               'input.yml')
 
+    def set_runner(self):
+        super(CoalPremixFLUT, self).set_runner()
+
+        # temporary change the ulf_reference
+        ulf_reference = self.ulf_reference
+        self.ulf_reference = self.ulf_reference_bs
+
+        # set ulf_reference_bs
+        super(CoalPremixFLUT, self).set_runner()
+        self.ulf_reference = ulf_reference
+
     def run(self, n_p=1):
 
         # the first time calculate solution for vel_ratio=1

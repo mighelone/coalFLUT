@@ -81,6 +81,9 @@ def test_init(flut):
     runner = UlfRun(flut.ulf_reference, flut.solver)
     assert float(runner[flut.keys['tpatch_end']]) == flut.tpatch_end
 
+    runner_bs = UlfRun(flut.ulf_reference_bs, flut.solver)
+    assert float(runner_bs[flut.keys['tpatch_end']]) == flut.tpatch_end
+
 
 def test_run_set_runner_fp(flut):
     """
