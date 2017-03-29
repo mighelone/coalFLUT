@@ -9,7 +9,7 @@
 // main mixture [ generalMix | compositeMix ]
 #define MAIN_MIXTURE generalMix;
 #define MIXTURE_TYPE CANTERA_MIXTURE;
-#define MECHANISM /home/vascella/Codes/coalFLUT/ch4_smooke;
+#define MECHANISM ch4_smooke;
 // ...when using compositeMix as main mixture
 #define CHEMISTRY_LIB ulfChemistry;
 #define TRANSPORT_LIB egTransport;
@@ -29,11 +29,11 @@
 // ... append flamelet equation name by HMF if
 // ZMin and ZMax != 0 or 1 respectively
 // --------------------------------------------------------------------
-#define T_EQN T_flameletLe1;
-#define Y_EQN Yi_flameletLe1;
-#define UPDATE_EQN mixtureUpdate;
+#define T_EQN T_flameletLeVar;
+#define Y_EQN Yi_flameletLeVar;
+#define UPDATE_EQN update_flameletLeVar;
 // ...set Le update type accordingly!
-#define LEWIS_UPDATE_TYPE constant;
+#define LEWIS_UPDATE_TYPE standard;
 // ...set to standard when computing with thermo diffusion (Soret)
 #define DTHERM_UPDATE_TYPE constant;
 // --------------------------------------------------------------------
@@ -51,7 +51,7 @@
 // ... erfc profile
 #define CHI_FROM_ERFC chi;
 #define ZST 0.05516607282679645;
-#define CHIST 1.0;
+#define CHIST 100.0;
 // ... read from file
 #define CHI_FROM_FILE off;
 #define CHI_FILE flamelet_chi.ulf;
@@ -71,15 +71,15 @@
 #define SPEC4 H2O;
 #define SPEC5 H2O2;
 #define SPEC6 CO2;
-#define Y1_FUEL 0;
-#define Y2_FUEL 1;
+#define Y1_FUEL 0.0;
+#define Y2_FUEL 1.0;
 #define Y3_FUEL 0;
 #define Y4_FUEL 0;
 #define Y5_FUEL 0;
 #define Y6_FUEL 0;
-#define Y1_OXID 0.767082998774;
+#define Y1_OXID 0.7670829987741036;
 #define Y2_OXID 0;
-#define Y3_OXID 0.232917001226;
+#define Y3_OXID 0.23291700122589645;
 #define Y4_OXID 0;
 #define Y5_OXID 0;
 #define Y6_OXID 0;
@@ -97,14 +97,14 @@
 // --------------------------------------------------------------------
 // result and restart options
 // --------------------------------------------------------------------
-#define RESULT_BASENAME test;
+#define RESULT_BASENAME sldf;
 #define RESTART_OPTION NO;
 #define RESTART_FILE flamelet_final.ulf;
 // --------------------------------------------------------------------
 // mesh
 // --------------------------------------------------------------------
 #define AXIS_LENGTH 30;
-#define REFINE_TARGET 101;
+#define REFINE_TARGET 100;
 #define REFINE_ADD_POINT 10;
 // --------------------------------------------------------------------
 // integration time

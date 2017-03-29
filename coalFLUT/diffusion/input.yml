@@ -1,0 +1,69 @@
+# Input file for 2 streams DFLUT
+volatiles:
+  T:
+    min: 300
+    max: 600
+  Y:
+    CH4: 0.5
+    H2: 0.2
+    N2: 0
+
+oxidizer:
+  T:
+    min: 300
+    max: 500
+  X:
+    O2: 0.21
+    N2: 0.79
+
+pressure: 101325
+
+parameters:
+  Y:
+    method: linspace
+    values: [0, 1, 2]
+
+  chist:
+    method: logspace
+    values: [-1, 1, 2]
+
+  Hnorm:
+    method: linspace
+    values: [0, 1, 2]
+
+flut:
+  pv:
+    CO: 1
+    CO2: 1
+  c:
+    101
+  varZ:
+    method: linspace
+    values: [0, 1, 3]
+  variables: ['rho', 'T']
+  solver: OpenFOAM
+
+
+ulf:
+  # Solver
+  # solver: /shared_home/vascella/Codes/ulf/build.gcc/ulf.x
+  # solver: /home/vascella/Codes/ulf/build/ulf.x
+  # solver: ulf.x
+  solver: /shared_home/vascella/Codes/ulf2/build/ulfrun
+  # Reference ulf configuration file
+  ulf_reference: flamelet_setup.ulf
+  # basename for new calculation
+  basename: test
+  mechanism: ch4_smooke.xml
+  # format of results parameters
+  par_format: "{:5.4f}"
+  n_grid: 101
+  restart: true
+
+  keys:
+      Zst: ZST
+      basename: RESULT_BASENAME
+      n_grid: REFINE_TARGET
+      mechanism: MECHANISM
+      chist: CHIST
+      pressure: PRESSURE

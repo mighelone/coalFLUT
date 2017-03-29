@@ -1,0 +1,9 @@
+// constant Lewis numbers for TESTING PURPOSES
+Le_H
+{
+    fixedValue 0.1;
+}
+Le_H2
+{
+    fixedValue 0.1;
+}

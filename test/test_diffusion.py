@@ -9,7 +9,8 @@ import os
 import shutil
 import glob
 
-ulf_file = 'example.ulf'
+
+ulf_file = os.path.abspath('examples/Le1/example.ulf')
 
 settings = {'flut': {'c': 101,
                      'pv': {'CO': 1, 'CO2': 1},
@@ -38,9 +39,41 @@ settings = {'flut': {'c': 101,
                           'Y': {'CH4': 0.5, 'H2': 0.2, 'N2': 0}}}
 
 
+@pytest.fixture(scope='module')
+def test_path():
+    """Setup the path for testing CoalDiffusionFLUT"""
+    cwd = os.getcwd()
+    path = os.path.abspath(os.path.join(cwd, 'test/test_diffusion'))
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.mkdir(path)
+    os.chdir(path)
+    CoalDiffusionFLUT.copy_files()
+    yield path
+
+    # teardown
+    os.chdir(cwd)
+    shutil.rmtree(path)
+
+
+def ulf_run(self):
+    """Mock function for UlfRun.run"""
+    res_file = self['RESULT_BASENAME'] + 'final.ulf'
+    shutil.copy(ulf_file, res_file)
+    return pyFLUT.Flame1D.read_ulf(res_file)
+
+
 @pytest.fixture
-def flut():
-    return CoalDiffusionFLUT(settings)
+def flut(test_path):
+    """Init CoalDiffusionFLUT"""
+    cflut = CoalDiffusionFLUT(settings)
+    yield cflut
+
+    # teardown
+    # remove intermediate files
+    [os.remove(f) for f in glob.iglob('inp_*.ulf')]
+    [os.remove(f)
+     for f in glob.iglob('{}_*.ulf'.format(cflut.basename))]
 
 
 def test_read(flut):
@@ -74,13 +107,6 @@ def test_chargases(flut):
     mass_tot = Mco + 0.5 * n2_to_o2 * Mn2
     assert flut.chargases['Y']['CO'] == Mco / mass_tot
     assert flut.chargases['Y']['N2'] == 0.5 * n2_to_o2 * Mn2 / mass_tot
-
-
-def ulf_run(self):
-    """Mock function for UlfRun.run"""
-    res_file = self['RESULT_BASENAME'] + 'final.ulf'
-    shutil.copy(ulf_file, res_file)
-    return pyFLUT.Flame1D.read_ulf(res_file)
 
 
 @mock.patch('pyFLUT.ulf.UlfRun.run', new=ulf_run)
