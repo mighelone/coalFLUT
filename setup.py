@@ -15,6 +15,6 @@ setup(
         'pytest',
         'termcolor',
         'autologging',
-        # 'pyFLUT>2.4.0',
+        # 'pyFLUT',
         'mock']
 )
