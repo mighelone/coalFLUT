@@ -55,8 +55,6 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         self.__log.info(
             'Start calculating freely propagating (fp) flames')
         results_fp = self._run_parameters(n_p, parameters)
-        for res in results_fp:
-            res['deltah'] = 0
 
         # sL is the array ZxY of the laminar flame speeds
         sL = np.zeros((len(self.Z), len(self.Y)))
@@ -117,8 +115,15 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         return runner
 
     def assemble_results(self, results, verbose=True):
-        results = [self._cut_flame(res) if res.variables['velratio'] < 1 else res
-                   for res in results]
+        for i, res in enumerate(results):
+            if res.variables['velratio'] < 1:
+                # remove points at const T
+                # shift and extend the grid
+                # in bs solutions
+                results[i] = self._cut_flame(res)
+            else:
+                # add deltah to fp solutions
+                res['deltah'] = 0
         super(CoalPremixFLUT, self).assemble_results(results, verbose)
 
     def convert_cc_to_uniform_grid(self, output_variables=None, n_points=None,
@@ -128,28 +133,30 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         flut_cc = super(CoalPremixFLUT, self).convert_cc_to_uniform_grid(
             output_variables, n_points, n_proc, verbose)
 
+        index = self.input_variable_index('velratio')
         # hMean_min
         flut_cc['hMean_min'] = 0
-        flut_cc['hMean_min'] = flut_cc['hMean'].min(axis=0)
+        flut_cc['hMean_min'] = np.min(flut_cc['hMean'], axis=index,
+                                      keepdims=True)
         # hMean_max
         flut_cc['hMean_max'] = 0
-        flut_cc['hMean_max'] = flut_cc['hMean'].max(axis=0)
+        flut_cc['hMean_max'] = np.max(flut_cc['hMean'], axis=index,
+                                      keepdims=True)
         # Hnorm
-        flut_cc['Hnorm'] = ((flut_cc['hMean'] - flut_cc['hMean_min'])/
+        flut_cc['Hnorm'] = ((flut_cc['hMean'] - flut_cc['hMean_min']) /
                             (flut_cc['hMean_max'] - flut_cc['hMean_min']))
         # map from velratio to Hnorm
         if verbose:
             self.__log.info('Map velratio to Hnorm')
         return flut_cc.map_variables(
-            from_inp='velratio', to_inp='Hnorm', n_points=11, verbose=verbose, n_proc=n_proc)
-
-        
-        
+            from_inp='velratio', to_inp='Hnorm', n_points=11, verbose=verbose,
+            n_proc=n_proc)
+        # return flut_cc
 
     @staticmethod
     def _cut_flame(flame):
         last_X = np.where(flame['T'] == flame['T'][0])[0][-1]
-        data = flame.data[slice(last_X, -1),  :]
+        data = flame.data[slice(last_X, -1), :]
         cutted_flame = pyFLUT.Flame1D(data=data,
                                       input_var='X',
                                       output_dict=flame.output_dict,
