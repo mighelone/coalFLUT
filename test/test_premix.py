@@ -8,7 +8,8 @@ from coalFLUT.premix import CoalPremixFLUT
 from pyFLUT.ulf import UlfRun
 import pyFLUT
 
-ulf_results = os.path.abspath('test_premix/cpremix_velratio0.8000_Z0.1250_Y1.0000.ulf')
+ulf_results = os.path.abspath(
+    'test_premix/cpremix_velratio0.8000_Z0.1250_Y1.0000.ulf')
 
 settings = {
     'parameters': {
@@ -121,14 +122,37 @@ def test_run_set_runner_bs(flut):
     # assert float(runner[flut.keys['T_fix']])
     assert float(runner[flut.keys['sl_guess']]) == sL * parameters[0]
 
+
 def test_cutflames():
     flame = pyFLUT.Flame1D.read_ulf(ulf_results)
-    flamec= CoalPremixFLUT._cut_flame(flame)
+    flamec = CoalPremixFLUT._cut_flame(flame)
 
     x = flamec['X']
     for index in (0, -1):
         assert x[index] == flame['X'][index]
     assert flame['T'][0] == flamec['T'][0]
     assert flamec['T'][0] < flamec['T'][1]
-    
-    
+
+
+@pytest.fixture
+def flame_exception(flut):
+    """
+    Generate a quenched flame for managing exception from ULF
+    """
+    parameters = (1, 0.1, 1)
+    basename_calc = flut.basename + flut.create_label(parameters) + "_run"
+    ulf_init = basename_calc + 'init.ulf'
+    shutil.copy(ulf_results, ulf_init)
+    res = flut._exception_ulf_fail(parameters, basename_calc)
+
+    yield res
+
+    os.remove(flut.basename + flut.create_label(parameters) + '.ulf')
+    os.remove(ulf_init)
+
+
+def test_run_exception(flame_exception):
+    assert flame_exception.shape[0] == 2
+    assert flame_exception['T'][0] == flame_exception['T'][1]
+    assert flame_exception['X'][0] != flame_exception['X'][1]
+    np.testing.assert_equal(flame_exception['deltah'], 0)

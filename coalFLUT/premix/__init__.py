@@ -163,3 +163,35 @@ class CoalPremixFLUT(AbstractCoalFLUT):
                                       variables=flame.variables)
         cutted_flame['X'] = cutted_flame['X'] - cutted_flame['X'][0]
         return cutted_flame.extend_length(flame['X'][-1])
+
+    def _exception_ulf_fail(self, parameters, basename_calc):
+        """
+        Manage the exception when running ulf. This create a quenched solution
+        starting from the init ulf file, extending the inlet conditions.
+        The flame created has dimension 2 x n_out.
+        Solution is also dumped in a file.
+
+        Parameters
+        ----------
+        parameters: tuple
+            Simulation parameters
+        basename_calc: str
+            Basename used for the calculation
+
+        Returns
+        -------
+        pyFLUT.Flame1D
+        """
+        res_init = pyFLUT.Flame1D.read_ulf(basename_calc + 'init.ulf')
+        data = np.empty((2, len(res_init.output_variables)))
+        data[0] = res_init.data[0]
+        data[-1] = res_init.data[0]
+        data[-1, res_init.output_dict['X']] = res_init['X'][-1]
+        res = pyFLUT.Flame1D(
+            data=data, output_dict=res_init.output_variables,
+            variables={par: value for par, value in
+                       zip(self._parameter_names, parameters)})
+        res['deltah'] = 0
+        # dump the file
+        res.write_ascii(self.basename + self.create_label(parameters) + '.ulf')
+        return res
