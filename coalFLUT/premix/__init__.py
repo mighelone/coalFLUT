@@ -162,6 +162,22 @@ class CoalPremixFLUT(AbstractCoalFLUT):
 
     @staticmethod
     def _cut_flame(flame, x_cut=0):
+        """
+        Create a new "cutted" flame removing the points before x_cut.
+        The grid is shifted and a final point added to have the same mesh
+        extension of the original flame.
+
+        Parameters
+        ----------
+        flame: pyFLUT.Flame1D
+            Original flame solution
+        x_cut: float
+            Value of the grid to cut
+
+        Returns
+        -------
+        pyFLUT.Flame1D
+        """
         # FIXME: define if including the last point with T=T0
         data = flame.data[flame['X'] > x_cut, :]
         cutted_flame = pyFLUT.Flame1D(data=data,
@@ -205,7 +221,6 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         # dump the file
         res.write_ascii(self.basename + self.create_label(parameters) + '.ulf')
         return res
-        return self._get_variables(parameters)
 
     def _ulfrun(self, basename_calc, runner, parameters, out_file, final_file):
         velratio, Z, Y = parameters
@@ -224,3 +239,9 @@ class CoalPremixFLUT(AbstractCoalFLUT):
             return super(CoalPremixFLUT, self)._ulfrun(basename_calc, runner,
                                                        parameters, out_file,
                                                        final_file)
+
+
+class FakeFlame(object):
+    def __init__(self, variables):
+        self.variables = variables
+        self.data = None
