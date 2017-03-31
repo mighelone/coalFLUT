@@ -162,6 +162,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
 
     @staticmethod
     def _cut_flame(flame, x_cut=0):
+        # FIXME: define if including the last point with T=T0
         data = flame.data[flame['X'] > x_cut, :]
         cutted_flame = pyFLUT.Flame1D(data=data,
                                       input_var='X',
