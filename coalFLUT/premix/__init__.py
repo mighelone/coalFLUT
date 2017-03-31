@@ -12,6 +12,7 @@ import cantera
 import pyFLUT
 import pyFLUT.ulf
 import shutil
+from termcolor import colored
 
 
 @logged
@@ -58,22 +59,20 @@ class CoalPremixFLUT(AbstractCoalFLUT):
 
         # sL is the array ZxY of the laminar flame speeds
         sL = np.zeros((len(self.Z), len(self.Y)))
-        Z = self.Z.tolist()
-        Y = self.Y.tolist()
         assert len(sL.ravel()) == len(results_fp), (
             "Number of "
             "results_fp different from YxZ")
         for flame in results_fp:
-            i_Z = Z.index(flame.variables['Z'])
-            i_Y = Y.index(flame.variables['Y'])
+            i_Z = np.argwhere(np.isclose(self.Z, flame.variables['Z']))
+            i_Y = np.argwhere(np.isclose(self.Y, flame.variables['Y']))
             sL[i_Z, i_Y] = flame['u'][0]
 
         self.sL = sL
 
-        self.__log.info(
-            'Start calculating bs flames')
         parameters = self._parameter.copy()
         parameters['velratio'] = parameters['velratio'][:-1]
+        self.__log.info(
+            'Start calculating bs flames %s', parameters)
         results_bs = self._run_parameters(n_p, parameters)
         # results_bs = [self._cut_flame(res) for res in results_bs]
 
@@ -120,7 +119,7 @@ class CoalPremixFLUT(AbstractCoalFLUT):
                 # remove points at const T
                 # shift and extend the grid
                 # in bs solutions
-                results[i] = self._cut_flame(res)
+                results[i] = self._cut_flame(res, self.tpatch_end)
             else:
                 # add deltah to fp solutions
                 res['deltah'] = 0
@@ -143,8 +142,16 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         flut_cc['hMean_max'] = np.max(flut_cc['hMean'], axis=index,
                                       keepdims=True)
         # Hnorm
-        flut_cc['Hnorm'] = ((flut_cc['hMean'] - flut_cc['hMean_min']) /
-                            (flut_cc['hMean_max'] - flut_cc['hMean_min']))
+        with np.errstate(divide='ignore', invalid='ignore'):
+            Hnorm = ((flut_cc['hMean'] - flut_cc['hMean_min']) /
+                     (flut_cc['hMean_max'] - flut_cc['hMean_min']))
+
+        index_nan = np.where(np.isnan(Hnorm))
+        hnorm_lin = np.linspace(0, 1, Hnorm.shape[index])
+
+        Hnorm[index_nan] = hnorm_lin[index_nan[index]]
+        flut_cc['Hnorm'] = Hnorm
+
         # map from velratio to Hnorm
         if verbose:
             self.__log.info('Map velratio to Hnorm')
@@ -154,9 +161,8 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         # return flut_cc
 
     @staticmethod
-    def _cut_flame(flame):
-        last_X = np.where(flame['T'] == flame['T'][0])[0][-1]
-        data = flame.data[slice(last_X, -1), :]
+    def _cut_flame(flame, x_cut=0):
+        data = flame.data[flame['X'] > x_cut, :]
         cutted_flame = pyFLUT.Flame1D(data=data,
                                       input_var='X',
                                       output_dict=flame.output_dict,
@@ -182,6 +188,9 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         -------
         pyFLUT.Flame1D
         """
+        self.__log.warning(
+            colored('Error running %s ... create a quenched solution',
+                    'magenta'), basename_calc)
         res_init = pyFLUT.Flame1D.read_ulf(basename_calc + 'init.ulf')
         data = np.empty((2, len(res_init.output_variables)))
         data[0] = res_init.data[0]
@@ -195,3 +204,22 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         # dump the file
         res.write_ascii(self.basename + self.create_label(parameters) + '.ulf')
         return res
+        return self._get_variables(parameters)
+
+    def _ulfrun(self, basename_calc, runner, parameters, out_file, final_file):
+        velratio, Z, Y = parameters
+
+        if velratio < 1 and float(runner[self.keys['sl_guess']]) == 0:
+            # solution is already quenched and it cannot be
+            # calculated
+            self.__log.debug(
+                colored('Bs %s cannot be calculated  use fp solution',
+                        'magenta'), basename_calc)
+            parameters_fb = (1, parameters[1], parameters[2])
+            res_fp = self.basename + self.create_label(parameters_fb) + '.ulf'
+            shutil.copy(res_fp, out_file)
+            return pyFLUT.Flame1D.read_ulf(out_file)
+        else:
+            return super(CoalPremixFLUT, self)._ulfrun(basename_calc, runner,
+                                                       parameters, out_file,
+                                                       final_file)
