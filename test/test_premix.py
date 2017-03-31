@@ -3,9 +3,11 @@ import os
 import shutil
 import glob
 import numpy as np
+import mock
 
 from coalFLUT.premix import CoalPremixFLUT
 from pyFLUT.ulf import UlfRun
+from pyFLUT.exceptions import UlfRunError
 import pyFLUT
 
 ulf_results = os.path.abspath(
@@ -13,10 +15,9 @@ ulf_results = os.path.abspath(
 
 settings = {
     'parameters': {
-        'Hnorm': {'method': 'linspace', 'values': [0, 1, 5]},
-        'velratio': {'method': 'linspace', 'values': [0.1, 1, 10]},
-        'Y': {'method': 'linspace', 'values': [0.7, 1.0, 31]},
-        'Z': {'method': 'linspace', 'points': 101, 'values': [0, 0.2, 21]}},
+        'velratio': {'method': 'linspace', 'values': [0.5, 1, 5]},
+        'Y': {'method': 'list', 'values': [1]},
+        'Z': {'method': 'linspace', 'points': 101, 'values': [0.02, 0.16, 8]}},
     'flut': {
         'c': {'points': 101},
         'pv': {'CO': 1, 'CO2': 1},
@@ -60,6 +61,14 @@ def test_path():
     os.mkdir(path)
     os.chdir(path)
     CoalPremixFLUT.copy_files()
+
+    # copy files from test #TEMPORARY
+    [shutil.copy(f, path)
+     for f in (
+        glob.glob(os.path.join(cwd, 'test_premix',
+                                    'cpremix_velratio*.ulf')) +
+        glob.glob(os.path.join(cwd, 'test_premix',
+                                    'inp_*.ulf')))]
     yield path
 
     # teardown
@@ -158,3 +167,33 @@ def test_run_exception(flame_exception):
     assert flame_exception['T'][0] == flame_exception['T'][1]
     assert flame_exception['X'][0] != flame_exception['X'][1]
     np.testing.assert_equal(flame_exception['deltah'], 0)
+
+
+def test_runall(flut):
+    flut.run()
+
+
+def _ulfrun(self, basename_calc, runner, parameters, out_file, final_file):
+    raise UlfRunError
+
+
+@mock.patch('coalFLUT.premix.CoalPremixFLUT._ulfrun', new=_ulfrun)
+def test_runall_quench(flut):
+    os.rename('cpremix_velratio0.5000_Z0.0400_Y1.0000.ulf', 'bak.ulf')
+    flut.run()
+
+
+def test_search_closest_solution(flut):
+    results = [pyFLUT.Flame1D.read_ulf(f)
+               for f in glob.iglob('cpremix_velratio*.ulf')]
+
+    res = pyFLUT.read_ulf('cpremix_velratio0.5000_Z0.0600_Y1.0000.ulf')
+
+    closest_res = flut._search_closeset_solution(res, results)
+
+    # 0.625
+    closest_res_v = pyFLUT.read_ulf(
+        'cpremix_velratio0.6250_Z0.0600_Y1.0000.ulf')
+
+    np.testing.assert_allclose(closest_res.data,
+                               closest_res_v.data)

@@ -114,16 +114,40 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         return runner
 
     def assemble_results(self, results, verbose=True):
+        # TODO: search here for FakeFlame
+        # FakeFlame should be
+        for i, res in enumerate(results):
+            if res.variables['velratio'] == 1:
+                res['deltah'] = 0
+
+        for i, res in enumerate(results):
+            if isinstance(res, FakeFlame):
+                results[i] = self._search_closeset_solution(res, results)
+
         for i, res in enumerate(results):
             if res.variables['velratio'] < 1:
-                # remove points at const T
-                # shift and extend the grid
-                # in bs solutions
                 results[i] = self._cut_flame(res, self.tpatch_end)
-            else:
-                # add deltah to fp solutions
-                res['deltah'] = 0
+
         super(CoalPremixFLUT, self).assemble_results(results, verbose)
+
+    def _search_closeset_solution(self, res, results):
+        def is_similar(res0, res1):
+            if res0.variables == res1.variables:
+                return False
+            else:
+                return all(res0.variables[p] == res1.variables[p]
+                           if p != 'velratio'
+                           else res0.variables[p] > res1.variables[p]
+                           for p in self._parameter_names)
+
+        similar_results = [r for r in results if r.variables
+                           if is_similar(r, res)]
+        closest_res = sorted(similar_results,
+                             key=lambda r: r.variables['velratio'])[0]
+        self.__log.debug('closest is %', closest_res.variables['velratio'])
+        return pyFLUT.Flame1D(data=closest_res.data,
+                              output_dict=closest_res.output_dict,
+                              variables=res.variables)
 
     def convert_cc_to_uniform_grid(self, output_variables=None, n_points=None,
                                    n_proc=1, verbose=False):
@@ -208,6 +232,17 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         self.__log.warning(
             colored('Error running %s ... create a quenched solution',
                     'magenta'), basename_calc)
+        if parameters[0] < 1:
+            # when ULF crash for bs create a FakeFlame
+            return FakeFlame(variables=self._get_variables(parameters))
+        else:
+            # when ULF crash for fp use init flame
+            return self._flame_from_init(basename_calc, parameters)
+
+    def _flame_from_init(self, basename_calc, parameters):
+        """
+        Create a flame solution from ULF init
+        """
         res_init = pyFLUT.Flame1D.read_ulf(basename_calc + 'init.ulf')
         data = np.empty((2, len(res_init.output_variables)))
         data[0] = res_init.data[0]
@@ -219,7 +254,8 @@ class CoalPremixFLUT(AbstractCoalFLUT):
                        zip(self._parameter_names, parameters)})
         res['deltah'] = 0
         # dump the file
-        res.write_ascii(self.basename + self.create_label(parameters) + '.ulf')
+        res.write_ascii(
+            self.basename + self.create_label(parameters) + '.ulf')
         return res
 
     def _ulfrun(self, basename_calc, runner, parameters, out_file, final_file):
@@ -228,17 +264,34 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         if velratio < 1 and float(runner[self.keys['sl_guess']]) == 0:
             # solution is already quenched and it cannot be
             # calculated
-            self.__log.debug(
-                colored('Bs %s cannot be calculated  use fp solution',
-                        'magenta'), basename_calc)
-            parameters_fb = (1, parameters[1], parameters[2])
-            res_fp = self.basename + self.create_label(parameters_fb) + '.ulf'
-            shutil.copy(res_fp, out_file)
-            return pyFLUT.Flame1D.read_ulf(out_file)
+            return self._flame_from_fp(parameters, basename_calc, out_file)
         else:
+            # run ULF
             return super(CoalPremixFLUT, self)._ulfrun(basename_calc, runner,
                                                        parameters, out_file,
                                                        final_file)
+
+    def _flame_from_fp(self, parameters, basename_calc, out_file):
+        """
+        Copy the solution from the quenched freely propagating flame
+
+        Parameters
+        ----------
+        parameters: tuple
+        basename_calc: str
+        out_file: str
+
+        Returns
+        -------
+        pyFLUT.Flame1D
+        """
+        self.__log.debug(
+            colored('Bs %s cannot be calculated  use fp solution',
+                    'magenta'), basename_calc)
+        parameters_fb = (1, parameters[1], parameters[2])
+        res_fp = self.basename + self.create_label(parameters_fb) + '.ulf'
+        shutil.copy(res_fp, out_file)
+        return pyFLUT.Flame1D.read_ulf(out_file)
 
 
 class FakeFlame(object):
