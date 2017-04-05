@@ -10,19 +10,15 @@ oxidizer:
   T: {max: 710, min: 310}
   X: {N2: 0.21, O2: 0.79}
 parameters:
-  Hnorm:
-    method: linspace
-    values: [0, 1, 5]
   Y:
     method: linspace
     values: [0.7, 1.0, 31]
   Z:
     method: linspace
-    points: 101
     values: [0, 0.2, 21]
-  vel_ratio:
+  velratio:
     method: linspace
-    values: [0.1, 1, 10]
+    values: [-1.2, 1, 5]
 pressure: 101325
 ulf:
   Le1: true
@@ -35,7 +31,7 @@ ulf:
   par_format: '{:5.4f}'
   restart: false
   sl_guess: 0.2
-  solver: /shared_home/messig/ULF/build_opt/ulf.x
+  solver: /shared_home/vascella/Codes/ulf2/build/ulfrun
   tpatch_end: 0.002
   ulf_reference: fp_setup.ulf
   ulf_reference_bs: bs_setup.ulf

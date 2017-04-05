@@ -157,18 +157,18 @@ class CoalPremixFLUT(AbstractCoalFLUT):
             output_variables, n_points, n_proc, verbose)
 
         index = self.input_variable_index('velratio')
-        # hMean_min
-        flut_cc['hMean_min'] = 0
-        flut_cc['hMean_min'] = np.min(flut_cc['hMean'], axis=index,
-                                      keepdims=True)
-        # hMean_max
-        flut_cc['hMean_max'] = 0
-        flut_cc['hMean_max'] = np.max(flut_cc['hMean'], axis=index,
-                                      keepdims=True)
+        # hMin
+        flut_cc['hMin'] = 0
+        flut_cc['hMin'] = np.min(flut_cc['hMean'], axis=index,
+                                 keepdims=True)
+        # hMax
+        flut_cc['hMax'] = 0
+        flut_cc['hMax'] = np.max(flut_cc['hMean'], axis=index,
+                                 keepdims=True)
         # Hnorm
         with np.errstate(divide='ignore', invalid='ignore'):
-            Hnorm = ((flut_cc['hMean'] - flut_cc['hMean_min']) /
-                     (flut_cc['hMean_max'] - flut_cc['hMean_min']))
+            Hnorm = ((flut_cc['hMean'] - flut_cc['hMin']) /
+                     (flut_cc['hMax'] - flut_cc['hMin']))
 
         index_nan = np.where(np.isnan(Hnorm))
         hnorm_lin = np.linspace(0, 1, Hnorm.shape[index])
@@ -180,9 +180,10 @@ class CoalPremixFLUT(AbstractCoalFLUT):
         if verbose:
             self.__log.info('Map velratio to Hnorm')
         return flut_cc.map_variables(
-            from_inp='velratio', to_inp='Hnorm', n_points=11, verbose=verbose,
+            from_inp='velratio', to_inp='Hnorm',
+            n_points=len(self.input_dict['velratio']),
+            verbose=verbose,
             n_proc=n_proc)
-        # return flut_cc
 
     @staticmethod
     def _cut_flame(flame, x_cut=0):
