@@ -31,6 +31,8 @@ class Coal1D(pyFLUT.Flame1D):
             output_dict=index, data=data, variables=file_vars,
             input_var='X')
         # calc Z and Y
+        if 'ZCfix' not in self.output_dict:
+            self['ZCfix'] = 0.0
         Z = self['Z'] + self['ZCfix']
         Y = np.zeros_like(Z) + 1.
         cond = Z > 0
@@ -87,7 +89,8 @@ class Coal1D(pyFLUT.Flame1D):
         #self['Hmin'] = H[0]
         #self['Hmax'] = H[1]
 
-        self['Hnorm'] = (self['hMean'] - self['Hmin']) / (self['Hmax'] - self['Hmin'])
+        self['Hnorm'] = (self['hMean'] - self['Hmin']) / \
+            (self['Hmax'] - self['Hmin'])
 
     def calc_Hnorm(self, flut):
         """
