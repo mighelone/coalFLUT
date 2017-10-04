@@ -12,7 +12,7 @@ import h5py
 @logged
 class CoalDiffusionFLUT(AbstractCoalFLUT, DiffusionFlut2Stream):
     """
-    Coal FLUT using diffusion flamelets
+    Coal FLUT using diffusion flamelets.
     """
     _files = ('input.yml',
               'flamelet_constLeNumbers.ulf',
@@ -41,6 +41,9 @@ class CoalDiffusionFLUT(AbstractCoalFLUT, DiffusionFlut2Stream):
 
 @logged
 class CoalDiffusionFLUTH(AbstractCoalFLUT, DiffusionFlutH2Stream):
+    """
+    Coal FLUT using diffusion flamelets with enthalpy losses alpha.
+    """
     _streams = ('volatiles', 'chargases', 'oxidizer')
     _files = ('inputH.yml',
               'flamelet_constLeNumbers.ulf',

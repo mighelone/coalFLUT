@@ -119,7 +119,6 @@ class AbstractCoalFLUT(pyFLUT.ulf.abstract.AbstractFlut2Stream):
                 chargases, self.gas)
 
 
-
 @logged
 class AbstractCoalFLUT(AbstractCoalFLUT):
     def _read_streams(self, settings):
