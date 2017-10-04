@@ -66,10 +66,14 @@ class AbstractCoalFLUT(pyFLUT.ulf.abstract.AbstractFlut2Stream):
              for sp in set(list(yp.keys()) + list(yv.keys()))}
 
         H_mix = mix(Hp, Hv)
-        H = H_mix[0] + Hnorm * (H_mix[1] - H_mix[0])
+        try:
+            H = H_mix[0] + Hnorm * (H_mix[1] - H_mix[0])
+        except IndexError:
+            H = H_mix
         mix_fuel = {'H': H, 'Y': y,
                     'T': pyFLUT.utilities.calc_Tf(
                         gas, H, self.pressure, y)}
+
 
         mix_fuel['Zst'] = pyFLUT.utilities.calc_zstoich(
             fuel=mix_fuel, oxidizer=self.oxidizer, gas=gas)
@@ -105,6 +109,35 @@ class AbstractCoalFLUT(pyFLUT.ulf.abstract.AbstractFlut2Stream):
             mw('CO') * (1. + 0.5 * X_ox.get('CO', 0) / x_o2)) / mass
         chargases = {}
         chargases['Y'] = Yc
-        chargases['T'] = self.volatiles['T'].copy()
-        self.chargases = pyFLUT.utilities.fix_composition_T(
-            chargases, self.gas)
+        try:
+            chargases['T'] = self.volatiles['T'].copy()
+            self.chargases = pyFLUT.utilities.fix_composition_T(
+                chargases, self.gas)
+        except AttributeError:
+            chargases['T'] = self.volatiles['T']
+            self.chargases = pyFLUT.utilities.fix_composition(
+                chargases, self.gas)
+
+
+
+@logged
+class AbstractCoalFLUT(AbstractCoalFLUT):
+    def _read_streams(self, settings):
+        """
+        Set the streams
+
+        :param settings:
+        :return:
+        """
+        fix_composition = pyFLUT.utilities.fix_composition
+
+        for stream in ('volatiles', 'oxidizer'):
+            setattr(self, stream, fix_composition(settings[stream],
+                                                  self.gas))
+            self.__log.debug('Set {}:{}', stream, getattr(self, stream))
+
+        # create chargas
+        self.set_chargas()
+        # read pressure
+        self.pressure = settings['pressure']
+        self.__log.debug('Pressure %s', self.pressure)

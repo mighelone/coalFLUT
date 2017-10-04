@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 
 
 from pyFLUT.ulf.diffusion import DiffusionFlut2Stream
+from pyFLUT.ulf.diffusion import DiffusionFlutH2Stream
 from ..abstract import AbstractCoalFLUT
 from autologging import logged
 import h5py
@@ -36,3 +37,16 @@ class CoalDiffusionFLUT(AbstractCoalFLUT, DiffusionFlut2Stream):
                                    data=[self.alphac])
         h5.close()
         return self_h5
+
+
+@logged
+class CoalDiffusionFLUTH(AbstractCoalFLUT, DiffusionFlutH2Stream):
+    _streams = ('volatiles', 'chargases', 'oxidizer')
+    _files = ('inputH.yml',
+              'flamelet_constLeNumbers.ulf',
+              'flamelet_defaultLeNumbers.ulf',
+              'flamelet_mixtureEntries.ulf',
+              'flamelet_setup_enthalpy.ulf',
+              'flamelet_template_enthalpy.ulf',
+              'ch4_smooke.xml',
+              'startProfiles.ulf')
